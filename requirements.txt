@@ -1,0 +1,2 @@
+wirecloud>=1.2.0
+pyJwt>=1.7.1
