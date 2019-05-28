@@ -49,7 +49,6 @@ def oauth_discovery(request):
 
 @require_GET
 def login(request):
-
     if request.user.is_authenticated():
         url = request.GET.get(REDIRECT_FIELD_NAME, '/')
     else:

@@ -39,7 +39,7 @@ class KeycloakOAuth2(BaseOAuth2):
     REALM = getattr(settings, 'KEYCLOAK_REALM', '')
     KEY = getattr(settings, 'KEYCLOAK_KEY', '')
 
-    CLIENT_ID = getattr(settings, 'KEYCLOAK_CLIENT_ID', '')
+    CLIENT_ID = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_KEY', '')
 
     ACCESS_TOKEN_URL = urljoin(IDM_SERVER, KEYCLOAK_ACCESS_TOKEN_ENDPOINT.format(REALM))
     AUTHORIZATION_URL = urljoin(IDM_SERVER, KEYCLOAK_AUTHORIZATION_ENDPOINT.format(REALM))
@@ -66,8 +66,8 @@ class KeycloakOAuth2(BaseOAuth2):
         """Return user details from JWT token info"""
 
         roles = []
-        if 'resource_access' in response and CLIENT_ID in response['resource_access'] and 'roles' in response['resource_access'][CLIENT_ID]:
-            roles = response['resource_access'][CLIENT_ID]['roles']
+        if 'resource_access' in response and self.CLIENT_ID in response['resource_access'] and 'roles' in response['resource_access'][self.CLIENT_ID]:
+            roles = response['resource_access'][self.CLIENT_ID]['roles']
 
         superuser = any(role.strip().lower() == "admin" for role in roles)
         return {
@@ -83,7 +83,7 @@ class KeycloakOAuth2(BaseOAuth2):
     def request_user_info(self, access_token):
         # Parse JWT to get user info
         public_key = "-----BEGIN PUBLIC KEY-----\n" + self.KEY + "\n-----END PUBLIC KEY-----"
-        user_info = jwt.decode(token, public_key, algorithms='RS256', audience='account')
+        user_info = jwt.decode(access_token, public_key, algorithms='RS256', audience='account')
         return user_info
 
     def user_data(self, access_token, *args, **kwargs):

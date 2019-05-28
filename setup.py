@@ -29,7 +29,7 @@ setuptools.setup(
     author="FICODES",
     author_email="contact@ficodes.com",
     description="WireCloud extension supporting authentication with Keycloak IDM",
-    long_description=read('../README.md'),
+    long_description=read('./README.md'),
     long_description_content_type="text/markdown",
     url="https://github.com/Ficodes/wirecloud-keycloak",
     packages=setuptools.find_packages(),
@@ -42,6 +42,7 @@ setuptools.setup(
     include_package_data=True,
     install_requires=(
         "wirecloud>=1.2.0",
-        "pyJwt>=1.7.1"
+        "pyJwt>=1.7.1",
+        "cryptography>=2.6.1"
     )
 )

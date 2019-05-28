@@ -25,12 +25,12 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.cache import cache_page
 
 from wirecloud.platform.core.plugins import get_version_hash
-from wirecloud.platform.localcatalogue.utils import install_component
 from wirecloud.platform.markets.utils import MarketManager
 from wirecloud.platform.models import CatalogueResource
 from wirecloud.platform.plugins import WirecloudPlugin
 from wirecloud.platform.workspace.utils import create_workspace, delete_workspace
 
+import wirecloud.keycloak
 
 try:
     from social_django.utils import BACKENDS, get_backend, load_strategy
@@ -103,8 +103,8 @@ class KeycloakPlugin(WirecloudPlugin):
 
         # Using FIWARE name in context for compatibility with existing templates
         if IDM_SUPPORT_ENABLED:
-            context["FIWARE_IDM_SERVER"] = getattr(settings, "KEYCLOAK_IDM_SERVER", wirecloud.keycloak.social_auth_backend.IDM_SERVER)
-            context["FIWARE_IDM_PUBLIC_URL"] = getattr(settings, "KEYCLOAK_IDM_SERVER", wirecloud.keycloak.social_auth_backend.IDM_SERVER)
+            context["FIWARE_IDM_SERVER"] = getattr(settings, "KEYCLOAK_IDM_SERVER", '')
+            context["FIWARE_IDM_PUBLIC_URL"] = getattr(settings, "KEYCLOAK_IDM_SERVER", '')
         else:
             context["FIWARE_IDM_SERVER"] = None
             context["FIWARE_IDM_PUBLIC_URL"] = None
