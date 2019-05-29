@@ -81,6 +81,9 @@ class KeycloakPlugin(WirecloudPlugin):
         return constants
 
     def get_proxy_processors(self):
+        if not IDM_SUPPORT_ENABLED:
+            return ()
+
         return ('wirecloud.keycloak.proxy.IDMTokenProcessor',)
 
     def get_platform_context_definitions(self):
