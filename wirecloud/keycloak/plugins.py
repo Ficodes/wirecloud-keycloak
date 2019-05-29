@@ -37,7 +37,8 @@ try:
     KEYCLOAK_SOCIAL_AUTH_BACKEND = get_backend(BACKENDS, 'keycloak')(load_strategy())
 
     IDM_SUPPORT_ENABLED = 'wirecloud.keycloak' in settings.INSTALLED_APPS and 'social_django' in settings.INSTALLED_APPS \
-        and getattr(settings, 'IDM_BACKEND', '') == 'keycloak'
+        and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_KEY', None) is not None and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_SECRET', None) is not None
+
 except:
     IDM_SUPPORT_ENABLED = False
 
