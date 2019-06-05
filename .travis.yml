@@ -1,0 +1,22 @@
+dist: xenial
+language: python
+cache: pip
+sudo: false
+python:
+    - "3.4"
+    - "3.5"
+    - "3.6"
+install:
+    - pip install coverage
+    - pip install coveralls
+    - pip install -r requirements.txt
+
+script:
+    - coverage run --source=. wirecloud/keycloak/tests/tests.py
+
+after_success:
+    - coveralls
+
+branches:
+    only:
+        - master
