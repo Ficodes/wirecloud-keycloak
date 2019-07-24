@@ -17,10 +17,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Wirecloud.  If not, see <http://www.gnu.org/licenses/>.
 
-import unittest
+SECRET_KEY = 'ymac23rckg@u1z9*r7g$zh+6yz1%u=x4hvde(vd-t2sn^jmuho'
 
-from wirecloud.keycloak.tests.social_backend import KeycloakSocialAuthBackendTestCase
-from wirecloud.keycloak.tests.plugins import KeycloakPluginTestCase
-
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+INSTALLED_APPS = (
+    'wirecloud.keycloak',
+)

@@ -24,14 +24,13 @@ from django.conf.urls import url
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.cache import cache_page
 
-from wirecloud.platform.core.plugins import get_version_hash
+from wirecloud.keycloak.utils import build_version_hash, build_backend
 from wirecloud.platform.plugins import WirecloudPlugin
 
-import wirecloud.keycloak
+get_version_hash = build_version_hash()
 
 try:
-    from social_django.utils import BACKENDS, get_backend, load_strategy
-    KEYCLOAK_SOCIAL_AUTH_BACKEND = get_backend(BACKENDS, 'keycloak')(load_strategy())
+    KEYCLOAK_SOCIAL_AUTH_BACKEND = build_backend()
 
     IDM_SUPPORT_ENABLED = 'wirecloud.keycloak' in settings.INSTALLED_APPS and 'social_django' in settings.INSTALLED_APPS \
         and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_KEY', None) is not None and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_SECRET', None) is not None

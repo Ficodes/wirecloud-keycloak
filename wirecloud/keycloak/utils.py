@@ -17,10 +17,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Wirecloud.  If not, see <http://www.gnu.org/licenses/>.
 
-import unittest
 
-from wirecloud.keycloak.tests.social_backend import KeycloakSocialAuthBackendTestCase
-from wirecloud.keycloak.tests.plugins import KeycloakPluginTestCase
+def build_version_hash():
+    from wirecloud.platform.core.plugins import get_version_hash
+    return get_version_hash
 
-if __name__ == "__main__":
-    unittest.main(verbosity=2)
+
+def build_backend():
+    from social_django.utils import BACKENDS, get_backend, load_strategy
+    return get_backend(BACKENDS, 'keycloak')(load_strategy())
