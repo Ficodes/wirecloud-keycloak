@@ -65,9 +65,15 @@ class KeycloakOAuth2(BaseOAuth2):
     def get_user_details(self, response):
         """Return user details from JWT token info"""
 
+        global_role = getattr(settings, 'KEYCLOAK_GLOBAL_ROLE', False)
         roles = []
-        if 'resource_access' in response and self.CLIENT_ID in response['resource_access'] and 'roles' in response['resource_access'][self.CLIENT_ID]:
-            roles = response['resource_access'][self.CLIENT_ID]['roles']
+
+        if global_role:
+            if 'realm_access' in response and 'roles' in response['realm_access']:
+                roles = response['realm_access']['roles']
+        else:
+            if 'resource_access' in response and self.CLIENT_ID in response['resource_access'] and 'roles' in response['resource_access'][self.CLIENT_ID]:
+                roles = response['resource_access'][self.CLIENT_ID]['roles']
 
         superuser = any(role.strip().lower() == "admin" for role in roles)
         return {

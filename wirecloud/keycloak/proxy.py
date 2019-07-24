@@ -75,15 +75,10 @@ def replace_get_parameter(request, gets, token):
 def replace_header_name(request, headers, token):
     for header in headers:
         if header in request['headers']:
-            header_name = request['headers'][header]
             del request['headers'][header]
 
-            if header_name == "Authorization":
-                token_pattern = "Bearer {token}"
-            else:
-                token_pattern = "{token}"
-
-            request['headers'][header_name] = token_pattern.format(token=token)
+            token_pattern = "Bearer {token}"
+            request['headers']['Authorization'] = token_pattern.format(token=token)
 
 
 def replace_body_pattern(request, bodies, token):
