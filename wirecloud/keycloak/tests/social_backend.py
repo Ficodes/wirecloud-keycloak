@@ -66,27 +66,35 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         self._jwt = MagicMock()
         self._jwt.decode.return_value = 'user info'
 
-    def _mock_module(self, settings_mock):
-        settings_mock.KEYCLOAK_IDM_SERVER = self.IDM_SERVER
-        settings_mock.KEYCLOAK_REALM = self.REALM
-        settings_mock.KEYCLOAK_KEY = self.KEY
-        settings_mock.SOCIAL_AUTH_KEYCLOAK_KEY = self.CLIENT_ID
-        settings_mock.SOCIAL_AUTH_KEYCLOAK_SECRET = self.SECRET
-        settings_mock.SOCIAL_AUTH_STRATEGY = 'social_django.strategy.DjangoStrategy'
-        settings_mock.SOCIAL_AUTH_STORAGE = 'social_django.models.DjangoStorage'
-        settings_mock.KEYCLOAK_GLOBAL_ROLE = False
+        import django.conf
+        self._old_settings = django.conf.settings
+        self._settings = MagicMock(
+            KEYCLOAK_IDM_SERVER=self.IDM_SERVER,
+            KEYCLOAK_REALM=self.REALM,
+            KEYCLOAK_KEY=self.KEY,
+            SOCIAL_AUTH_KEYCLOAK_KEY=self.CLIENT_ID,
+            SOCIAL_AUTH_KEYCLOAK_SECRET=self.SECRET,
+            KEYCLOAK_GLOBAL_ROLE=False
+        )
 
+        django.conf.settings = self._settings
+
+    def tearDown(self):
+        import django.conf
+        django.conf.settings = self._old_settings
+
+    def _mock_module(self):
         from wirecloud.keycloak import social_auth_backend
 
         social_auth_backend.jwt = self._jwt
 
+        social_auth_backend.settings = self._settings
         oauth2 = social_auth_backend.KeycloakOAuth2(self._strategy)
         return oauth2
 
-    @patch('django.conf.settings')
     @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
-    def test_class_params(self, settings_mock):
-        oauth2 = self._mock_module(settings_mock)
+    def test_class_params(self):
+        oauth2 = self._mock_module()
 
         self.assertEqual(oauth2.IDM_SERVER, 'http://server')
         self.assertEqual(oauth2.REALM, 'demo')
@@ -95,30 +103,27 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         self.assertEqual(oauth2.ACCESS_TOKEN_URL, 'http://server/auth/realms/demo/protocol/openid-connect/token')
         self.assertEqual(oauth2.AUTHORIZATION_URL, 'http://server/auth/realms/demo/protocol/openid-connect/auth')
 
-    @patch('django.conf.settings')
-    def test_get_auth_headers(self, settings_mock):
-        oauth2 = self._mock_module(settings_mock)
+    def test_get_auth_headers(self):
+        oauth2 = self._mock_module()
         headers = oauth2.auth_headers()
 
         self.assertEqual(headers, {
             'Authorization': 'Basic Y2xpZW50OnNlY3JldA=='
         })
 
-    def _test_get_user_details(self, settings_mock, resource, expected_details):
-        oauth2 = self._mock_module(settings_mock)
+    def _test_get_user_details(self, resource, expected_details, global_role=False):
+        oauth2 = self._mock_module()
         details = oauth2.get_user_details(resource)
 
         self.assertEqual(details, expected_details)
         self.assertEquals(self._strategy, oauth2.STRATEGY)
 
-    @patch('django.conf.settings')
     @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
-    def test_get_user_details_regular(self, settings_mock):
-        self._test_get_user_details(settings_mock, self.TOKEN_INFO, self.DETAILS)
+    def test_get_user_details_regular(self):
+        self._test_get_user_details(self.TOKEN_INFO, self.DETAILS)
 
-    @patch('django.conf.settings')
     @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
-    def test_get_user_details_admin(self, settings_mock):
+    def test_get_user_details_admin(self):
         resource = deepcopy(self.TOKEN_INFO)
         details = deepcopy(self.DETAILS)
 
@@ -130,11 +135,25 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         details['is_superuser'] = True
         details['is_staff'] = True
 
-        self._test_get_user_details(settings_mock, resource, details)
+        self._test_get_user_details(resource, details)
 
-    @patch('django.conf.settings')
-    def test_get_user_info(self, settings_mock):
-        oauth2 = self._mock_module(settings_mock)
+    @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
+    def test_get_user_details_admin_global(self):
+
+        self._settings.KEYCLOAK_GLOBAL_ROLE = True
+        resource = deepcopy(self.TOKEN_INFO)
+        details = deepcopy(self.DETAILS)
+
+        resource['realm_access'] = {
+            'roles': ['admin']
+        }
+        details['is_superuser'] = True
+        details['is_staff'] = True
+
+        self._test_get_user_details(resource, details)
+
+    def test_get_user_info(self):
+        oauth2 = self._mock_module()
         user_info = oauth2.user_data('token')
 
         self.assertEqual(user_info, 'user info')
