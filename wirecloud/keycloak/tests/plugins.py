@@ -29,6 +29,10 @@ class WirecloudPluginMock():
     pass
 
 
+def translation_mock(text):
+    return text
+
+
 class KeycloakPluginTestCase(TestCase):
 
     KEY = 'key'
@@ -185,23 +189,85 @@ class KeycloakPluginTestCase(TestCase):
 
         self.assertEqual((), proc)
 
+    @patch('django.utils.translation.ugettext_lazy', new=translation_mock)
     def test_get_platform_context_definitions(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
 
-    def test_get_platform_context_definitions_not_enabled(self):
-        pass
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+        self.assertEqual({
+            'fiware_token_available': {
+                'label': 'FIWARE token available',
+                'description': 'Indicates if the current user has associated a FIWARE auth token that can be used for accessing other FIWARE resources',
+            },
+        }, plugin.get_platform_context_definitions())
 
     def test_get_platform_context_current_values(self):
-        pass
+        user_mock = MagicMock()
+        user_mock.is_authenticated.return_value = True
+        social_mock = MagicMock()
+        social_mock.exists.return_value = True
+        user_mock.social_auth.filter.return_value = social_mock
+
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        self.assertEqual({
+            'fiware_token_available': True
+        }, plugin.get_platform_context_current_values(user_mock))
+        user_mock.is_authenticated.assert_called_once_with()
+        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak')
+        social_mock.exists.assert_called_once_with()
 
     def test_get_platform_context_current_values_not_enabled(self):
-        pass
+        user_mock = MagicMock()
+        user_mock.is_authenticated.return_value = True
+        social_mock = MagicMock()
+        social_mock.exists.return_value = True
+        user_mock.social_auth.filter.return_value = social_mock
 
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = False
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        self.assertEqual({
+            'fiware_token_available': False
+        }, plugin.get_platform_context_current_values(user_mock))
+
+    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(
+            'wirecloud.keycloak',
+            'social_django'
+        ), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET, KEYCLOAK_IDM_SERVER='http://idm.docker'))
     def test_get_django_template_context_processors(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        processors = plugin.get_django_template_context_processors()
+        self.assertEqual({
+            'FIWARE_IDM_SERVER': 'http://idm.docker',
+            'FIWARE_IDM_PUBLIC_URL': 'http://idm.docker'
+        }, processors)
 
     def test_get_django_template_context_processors_not_enabled(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = False
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        processors = plugin.get_django_template_context_processors()
+        self.assertEqual({
+            'FIWARE_IDM_SERVER': None,
+            'FIWARE_IDM_PUBLIC_URL': None
+        }, processors)
 
 
 if __name__ == "__main__":
