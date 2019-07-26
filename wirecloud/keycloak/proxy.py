@@ -29,7 +29,7 @@ from wirecloud.proxy.utils import ValidationError
 
 
 if IDM_SUPPORT_ENABLED:
-    from social_django.utils import load_strategy
+    from wirecloud.keycloak.utils import load_strategy
     STRATEGY = load_strategy()
 else:
     STRATEGY = None

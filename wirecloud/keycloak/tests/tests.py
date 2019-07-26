@@ -21,6 +21,8 @@ import unittest
 
 from wirecloud.keycloak.tests.social_backend import KeycloakSocialAuthBackendTestCase
 from wirecloud.keycloak.tests.plugins import KeycloakPluginTestCase
+from wirecloud.keycloak.tests.proxy import IDMTokenProcessorTestCase
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
