@@ -19,6 +19,7 @@
 
 import unittest
 import types
+from importlib import reload
 
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock
@@ -67,8 +68,10 @@ class KeycloakPluginTestCase(TestCase):
         import django.views.decorators.cache
         django.views.decorators.cache.cache_page = cache_mock
 
-        from wirecloud.keycloak.plugins import KeycloakPlugin
-        plugin = KeycloakPlugin()
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
 
         urls = plugin.get_urls()
 
@@ -80,26 +83,107 @@ class KeycloakPluginTestCase(TestCase):
 
         url_mock.assert_called_once_with('^.well-known/oauth$', 'cache', name='oauth.discovery')
 
+    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET))
     def test_get_urls_not_enabled(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
 
-    def test_get_api_backends(self):
-        pass
+        urls = plugin.get_urls()
 
+        self.assertEqual((), urls)
+
+    @patch('wirecloud.keycloak.utils.get_social_auth_model')
+    def test_get_api_backends(self, social_model_mock):
+        user_mock = MagicMock()
+        social_mock = MagicMock()
+        social_mock.objects.get.return_value = MagicMock(user=user_mock)
+        social_model_mock.return_value = social_mock
+
+        import wirecloud.keycloak.utils
+        version_hash_mock = MagicMock(return_value=MagicMock(return_value='1'))
+        wirecloud.keycloak.utils.build_version_hash = version_hash_mock
+
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
+        user_data_mock = MagicMock()
+        user_data_mock.user_data.return_value = {
+            'username': 'user'
+        }
+        wirecloud.keycloak.plugins.KEYCLOAK_SOCIAL_AUTH_BACKEND = user_data_mock
+
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        token = plugin.get_api_auth_backends()
+
+        self.assertEqual(user_mock, token['Bearer']('bearer', 'token'))
+
+        social_mock.objects.get.assert_called_once_with(provider='keycloak', uid='user')
+        user_data_mock.user_data.assert_called_once_with('token')
+
+    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET))
     def test_get_api_backends_not_enabled(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        token = plugin.get_api_auth_backends()
+        self.assertEqual({}, token)
 
     def test_get_constants(self):
-        pass
+        import wirecloud.keycloak.utils
+        version_hash_mock = MagicMock(return_value=MagicMock(return_value='1'))
+        wirecloud.keycloak.utils.build_version_hash = version_hash_mock
 
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        backend_mock = MagicMock(IDM_SERVER='http://idm.docker')
+        wirecloud.keycloak.plugins.KEYCLOAK_SOCIAL_AUTH_BACKEND = backend_mock
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
+
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+        const = plugin.get_constants()
+
+        self.assertEqual({
+            'FIWARE_IDM_SERVER': 'http://idm.docker'
+        }, const)
+
+
+    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=()))
     def test_get_constants_not_enabled(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+        const = plugin.get_constants()
+
+        self.assertEqual({}, const)
 
     def test_get_proxy_processors(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
 
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
+
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+        proc = plugin.get_proxy_processors()
+
+        self.assertEqual(('wirecloud.keycloak.proxy.IDMTokenProcessor',), proc)
+
+    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=()))
     def test_get_proxy_processors_not_enabled(self):
-        pass
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+        proc = plugin.get_proxy_processors()
+
+        self.assertEqual((), proc)
 
     def test_get_platform_context_definitions(self):
         pass

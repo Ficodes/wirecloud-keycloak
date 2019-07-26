@@ -24,7 +24,7 @@ from django.conf.urls import url
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.cache import cache_page
 
-from wirecloud.keycloak.utils import build_version_hash, build_backend
+from wirecloud.keycloak.utils import build_version_hash, build_backend, get_social_auth_model
 from wirecloud.platform.plugins import WirecloudPlugin
 
 get_version_hash = build_version_hash()
@@ -41,7 +41,7 @@ except:
 
 def auth_keycloak_token(auth_type, token):
 
-    from social_django.models import UserSocialAuth
+    UserSocialAuth = get_social_auth_model()
     user_data = KEYCLOAK_SOCIAL_AUTH_BACKEND.user_data(token)
     return UserSocialAuth.objects.get(provider='keycloak', uid=user_data['username']).user
 
@@ -71,7 +71,7 @@ class KeycloakPlugin(WirecloudPlugin):
 
         if IDM_SUPPORT_ENABLED:
             global KEYCLOAK_SOCIAL_AUTH_BACKEND
-            import wirecloud.keycloak.social_auth_backend
+            #import wirecloud.keycloak.social_auth_backend
             constants["FIWARE_IDM_SERVER"] = KEYCLOAK_SOCIAL_AUTH_BACKEND.IDM_SERVER
 
         return constants
