@@ -22,6 +22,7 @@ import unittest
 from wirecloud.keycloak.tests.social_backend import KeycloakSocialAuthBackendTestCase
 from wirecloud.keycloak.tests.plugins import KeycloakPluginTestCase
 from wirecloud.keycloak.tests.proxy import IDMTokenProcessorTestCase
+from wirecloud.keycloak.tests.views import KeycloakViewTestCase
 
 
 if __name__ == "__main__":

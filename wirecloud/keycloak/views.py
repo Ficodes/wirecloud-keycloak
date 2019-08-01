@@ -27,14 +27,14 @@ from django.views.decorators.http import require_GET
 
 from wirecloud.commons.authentication import logout as wirecloud_logout
 from wirecloud.commons.utils.http import build_error_response, get_absolute_reverse_url
+from wirecloud.keycloak.utils import build_simple_backend
 
 ALLOWED_ORIGINS = [portal['url'] for portal in getattr(settings, 'FIWARE_PORTALS', ())]
 
 
 @require_GET
 def oauth_discovery(request):
-    from social_django.utils import BACKENDS, get_backend
-    keycloak_auth_backend = get_backend(BACKENDS, 'keycloak')
+    keycloak_auth_backend = build_simple_backend()
 
     endpoints = {
         'flows': ["Authorization Code Grant", "Resource Owner Password Credentials Grant"],

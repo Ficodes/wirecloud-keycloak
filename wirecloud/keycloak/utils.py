@@ -28,6 +28,11 @@ def build_backend():
     return get_backend(BACKENDS, 'keycloak')(load_strategy())
 
 
+def build_simple_backend():
+    from social_django.utils import BACKENDS, get_backend
+    return get_backend(BACKENDS, 'keycloak')
+
+
 def load_strategy():
     from social_django.utils import load_strategy
     return load_strategy()
