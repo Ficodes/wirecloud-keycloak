@@ -25,7 +25,7 @@ def read(fname):
 
 setuptools.setup(
     name='wirecloud-keycloak',
-    version='0.1',
+    version='0.1.1',
     author="FICODES",
     author_email="contact@ficodes.com",
     description="WireCloud extension supporting authentication with Keycloak IDM",
@@ -36,7 +36,7 @@ setuptools.setup(
     license="AGPLv3+",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
         "Operating System :: OS Independent",
     ],
     include_package_data=True,
