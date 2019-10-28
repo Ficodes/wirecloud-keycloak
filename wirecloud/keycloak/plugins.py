@@ -72,7 +72,7 @@ class KeycloakPlugin(WirecloudPlugin):
         if IDM_SUPPORT_ENABLED:
             global KEYCLOAK_SOCIAL_AUTH_BACKEND
             #import wirecloud.keycloak.social_auth_backend
-            constants["FIWARE_IDM_SERVER"] = KEYCLOAK_SOCIAL_AUTH_BACKEND.IDM_SERVER
+            constants["KEYCLOAK_SERVER"] = KEYCLOAK_SOCIAL_AUTH_BACKEND.IDM_SERVER
 
         return constants
 
@@ -91,7 +91,7 @@ class KeycloakPlugin(WirecloudPlugin):
             },
         }
 
-    def get_platform_context_current_values(self, user):
+    def get_platform_context_current_values(self, user, **kwargs):
         # Work around bug when running manage.py compress
         fiware_token_available = IDM_SUPPORT_ENABLED and user.is_authenticated() and user.social_auth.filter(provider='keycloak').exists()
         return {
@@ -103,10 +103,8 @@ class KeycloakPlugin(WirecloudPlugin):
 
         # Using FIWARE name in context for compatibility with existing templates
         if IDM_SUPPORT_ENABLED:
-            context["FIWARE_IDM_SERVER"] = getattr(settings, "KEYCLOAK_IDM_SERVER", '')
-            context["FIWARE_IDM_PUBLIC_URL"] = getattr(settings, "KEYCLOAK_IDM_SERVER", '')
+            context["KEYCLOAK_SERVER"] = getattr(settings, "KEYCLOAK_SERVER", '')
         else:
-            context["FIWARE_IDM_SERVER"] = None
-            context["FIWARE_IDM_PUBLIC_URL"] = None
+            context["KEYCLOAK_SERVER"] = None
 
         return context

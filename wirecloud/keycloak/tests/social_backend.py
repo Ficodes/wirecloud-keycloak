@@ -69,7 +69,7 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         import django.conf
         self._old_settings = django.conf.settings
         self._settings = MagicMock(
-            KEYCLOAK_IDM_SERVER=self.IDM_SERVER,
+            KEYCLOAK_SERVER=self.IDM_SERVER,
             KEYCLOAK_REALM=self.REALM,
             KEYCLOAK_KEY=self.KEY,
             SOCIAL_AUTH_KEYCLOAK_KEY=self.CLIENT_ID,

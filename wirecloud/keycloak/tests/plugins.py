@@ -154,7 +154,7 @@ class KeycloakPluginTestCase(TestCase):
         const = plugin.get_constants()
 
         self.assertEqual({
-            'FIWARE_IDM_SERVER': 'http://idm.docker'
+            'KEYCLOAK_SERVER': 'http://idm.docker'
         }, const)
 
 
@@ -242,7 +242,7 @@ class KeycloakPluginTestCase(TestCase):
     @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(
             'wirecloud.keycloak',
             'social_django'
-        ), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET, KEYCLOAK_IDM_SERVER='http://idm.docker'))
+        ), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET, KEYCLOAK_SERVER='http://idm.docker'))
     def test_get_django_template_context_processors(self):
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
@@ -252,8 +252,7 @@ class KeycloakPluginTestCase(TestCase):
 
         processors = plugin.get_django_template_context_processors()
         self.assertEqual({
-            'FIWARE_IDM_SERVER': 'http://idm.docker',
-            'FIWARE_IDM_PUBLIC_URL': 'http://idm.docker'
+            'KEYCLOAK_SERVER': 'http://idm.docker',
         }, processors)
 
     def test_get_django_template_context_processors_not_enabled(self):
@@ -265,8 +264,7 @@ class KeycloakPluginTestCase(TestCase):
 
         processors = plugin.get_django_template_context_processors()
         self.assertEqual({
-            'FIWARE_IDM_SERVER': None,
-            'FIWARE_IDM_PUBLIC_URL': None
+            'KEYCLOAK_SERVER': None,
         }, processors)
 
 

@@ -35,7 +35,7 @@ class KeycloakOAuth2(BaseOAuth2):
     name = 'keycloak'
     ID_KEY = 'preferred_username'
 
-    IDM_SERVER = getattr(settings, 'KEYCLOAK_IDM_SERVER', '')
+    IDM_SERVER = getattr(settings, 'KEYCLOAK_SERVER', '')
     REALM = getattr(settings, 'KEYCLOAK_REALM', '')
     KEY = getattr(settings, 'KEYCLOAK_KEY', '')
 
