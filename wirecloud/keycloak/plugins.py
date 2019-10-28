@@ -91,7 +91,7 @@ class KeycloakPlugin(WirecloudPlugin):
             },
         }
 
-    def get_platform_context_current_values(self, user):
+    def get_platform_context_current_values(self, user, **kwargs):
         # Work around bug when running manage.py compress
         fiware_token_available = IDM_SUPPORT_ENABLED and user.is_authenticated() and user.social_auth.filter(provider='keycloak').exists()
         return {
