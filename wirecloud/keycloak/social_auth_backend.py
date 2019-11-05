@@ -22,7 +22,11 @@ import jwt
 from urllib.parse import urljoin
 
 from django.conf import settings
+from django.contrib.auth.models import Group, User
 from social_core.backends.oauth import BaseOAuth2
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 
 KEYCLOAK_AUTHORIZATION_ENDPOINT = 'auth/realms/{}/protocol/openid-connect/auth'
@@ -51,6 +55,7 @@ class KeycloakOAuth2(BaseOAuth2):
         ('username', 'username'),
         ('refresh_token', 'refresh_token'),
         ('expires_in', 'expires'),
+        ('roles', 'roles')
     ]
 
     def __init__(self, *args, **kwargs):
@@ -84,6 +89,7 @@ class KeycloakOAuth2(BaseOAuth2):
             'last_name': response.get('family_name') or '',
             'is_superuser': superuser,
             'is_staff': superuser,
+            'roles': roles
         }
 
     def request_user_info(self, access_token):
@@ -94,3 +100,13 @@ class KeycloakOAuth2(BaseOAuth2):
 
     def user_data(self, access_token, *args, **kwargs):
         return self.request_user_info(access_token)
+
+
+@receiver(post_save, sender=User)
+def add_user_groups(sender, instance, created, **kwargs):
+    if instance.social_auth.count() > 0:
+        social = instance.social_auth.all()[0]
+        if 'roles' in social.extra_data:
+            for role in social.extra_data['roles']:
+                role_group, created = Group.objects.get_or_create(name=role.strip().lower())
+                instance.groups.add(role_group)
