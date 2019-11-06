@@ -106,6 +106,10 @@ class KeycloakOAuth2(BaseOAuth2):
 def add_user_groups(sender, instance, created, **kwargs):
     if instance.social_auth.count() > 0:
         social = instance.social_auth.all()[0]
+        # Remove user groups to support removed roles
+        instance.groups.clear()
+
+        # Add user to role groups
         if 'roles' in social.extra_data:
             for role in social.extra_data['roles']:
                 role_group, created = Group.objects.get_or_create(name=role.strip().lower())
