@@ -41,3 +41,11 @@ def load_strategy():
 def get_social_auth_model():
     from social_django.models import UserSocialAuth
     return UserSocialAuth
+
+def get_user_model():
+    from django.contrib.auth.models import User
+    return User
+
+def get_group_model():
+    from django.contrib.auth.models import Group
+    return Group

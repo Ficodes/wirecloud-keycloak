@@ -24,6 +24,18 @@ import unittest
 from unittest import TestCase
 from unittest.mock import patch, MagicMock, Mock
 
+import django.dispatch
+
+
+def signal_decorator(signal, sender=None):
+    def mock_decorator(funct):
+        def wrapper(sender, instance, created, **kwargs):
+            funct(sender, instance, created)
+
+        return wrapper
+    return mock_decorator
+
+
 class BaseOAuthMock():
 
     STRATEGY = None
@@ -59,6 +71,7 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         'last_name': 'surname',
         'is_superuser': False,
         'is_staff': False,
+        'roles': []
     }
 
     def setUp(self):
@@ -79,9 +92,16 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
 
         django.conf.settings = self._settings
 
+        # Mock post_save signal
+        from django.dispatch import receiver
+        self._receiver = receiver
+
+        django.dispatch.receiver = signal_decorator
+
     def tearDown(self):
         import django.conf
         django.conf.settings = self._old_settings
+        django.dispatch.receiver = self._receiver
 
     def _mock_module(self):
         from wirecloud.keycloak import social_auth_backend
@@ -93,6 +113,8 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         return oauth2
 
     @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
     def test_class_params(self):
         oauth2 = self._mock_module()
 
@@ -103,6 +125,8 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         self.assertEqual(oauth2.ACCESS_TOKEN_URL, 'http://server/auth/realms/demo/protocol/openid-connect/token')
         self.assertEqual(oauth2.AUTHORIZATION_URL, 'http://server/auth/realms/demo/protocol/openid-connect/auth')
 
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
     def test_get_auth_headers(self):
         oauth2 = self._mock_module()
         headers = oauth2.auth_headers()
@@ -119,25 +143,32 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         self.assertEquals(self._strategy, oauth2.STRATEGY)
 
     @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
     def test_get_user_details_regular(self):
         self._test_get_user_details(self.TOKEN_INFO, self.DETAILS)
 
     @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
     def test_get_user_details_admin(self):
         resource = deepcopy(self.TOKEN_INFO)
         details = deepcopy(self.DETAILS)
 
         resource['resource_access'] = {
             'client': {
-                'roles': ['admin']
+                'roles': ['admin', 'manager']
             }
         }
         details['is_superuser'] = True
         details['is_staff'] = True
+        details['roles'] = ['manager']
 
         self._test_get_user_details(resource, details)
 
     @patch('social_core.backends.oauth.BaseOAuth2', new=BaseOAuthMock)
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
     def test_get_user_details_admin_global(self):
 
         self._settings.KEYCLOAK_GLOBAL_ROLE = True
@@ -152,6 +183,8 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
 
         self._test_get_user_details(resource, details)
 
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
     def test_get_user_info(self):
         oauth2 = self._mock_module()
         user_info = oauth2.user_data('token')
@@ -159,6 +192,69 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         self.assertEqual(user_info, 'user info')
         self._jwt.decode.assert_called_once_with('token', '-----BEGIN PUBLIC KEY-----\nrsa key\n-----END PUBLIC KEY-----', algorithms='RS256', audience='account')
 
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
+    def test_user_group_creation(self):
+        group_model = MagicMock()
+        instance = MagicMock()
+        instance.social_auth.count.return_value = 1
+
+        social_mock = MagicMock(extra_data={
+            'roles': ['manager']
+        })
+
+        instance.social_auth.all.return_value = [social_mock]
+
+        group_instance = MagicMock()
+        group_model.objects.get_or_create.return_value = (group_instance, True)
+
+        from wirecloud.keycloak import social_auth_backend
+
+        social_auth_backend.get_group_model = MagicMock()
+        social_auth_backend.get_group_model.return_value = group_model
+        social_auth_backend.add_user_groups(MagicMock(), instance, True)
+
+        # Check calls
+        instance.social_auth.count.assert_called_once_with()
+        instance.social_auth.all.assert_called_once_with()
+        instance.groups.clear.assert_called_once_with()
+
+        group_model.objects.get_or_create.assert_called_once_with(name='manager')
+        instance.groups.add.assert_called_once_with(group_instance)
+
+
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
+    def test_user_group_no_social_profile(self):
+        instance = MagicMock()
+        instance.social_auth.count.return_value = 0
+
+        from wirecloud.keycloak import social_auth_backend
+
+        social_auth_backend.add_user_groups(MagicMock(), instance, True)
+
+        instance.social_auth.count.assert_called_once_with()
+        self.assertEqual(0, instance.social_auth.all.call_count)
+
+    @patch('wirecloud.keycloak.utils.get_user_model', new=MagicMock())
+    @patch('wirecloud.keycloak.utils.get_group_model', new=MagicMock())
+    def test_user_group_remove_roles(self):
+        group_model = MagicMock()
+        instance = MagicMock()
+        instance.social_auth.count.return_value = 1
+
+        social_mock = MagicMock(extra_data={})
+        instance.social_auth.all.return_value = [social_mock]
+
+        from wirecloud.keycloak import social_auth_backend
+        social_auth_backend.get_group_model = MagicMock()
+        social_auth_backend.add_user_groups(MagicMock(), instance, True)
+
+        instance.social_auth.count.assert_called_once_with()
+        instance.social_auth.all.assert_called_once_with()
+        instance.groups.clear.assert_called_once_with()
+
+        self.assertEqual(0, social_auth_backend.get_group_model.call_count)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

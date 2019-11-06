@@ -22,11 +22,12 @@ import jwt
 from urllib.parse import urljoin
 
 from django.conf import settings
-from django.contrib.auth.models import Group, User
 from social_core.backends.oauth import BaseOAuth2
 
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+
+from wirecloud.keycloak.utils import get_user_model, get_group_model
 
 
 KEYCLOAK_AUTHORIZATION_ENDPOINT = 'auth/realms/{}/protocol/openid-connect/auth'
@@ -81,6 +82,8 @@ class KeycloakOAuth2(BaseOAuth2):
                 roles = response['resource_access'][self.CLIENT_ID]['roles']
 
         superuser = any(role.strip().lower() == "admin" for role in roles)
+        group_roles = [role.strip().lower() for role in roles if role.strip().lower() != "admin"]
+
         return {
             'username': response.get('preferred_username'),
             'email': response.get('email') or '',
@@ -89,7 +92,7 @@ class KeycloakOAuth2(BaseOAuth2):
             'last_name': response.get('family_name') or '',
             'is_superuser': superuser,
             'is_staff': superuser,
-            'roles': roles
+            'roles': group_roles
         }
 
     def request_user_info(self, access_token):
@@ -102,7 +105,7 @@ class KeycloakOAuth2(BaseOAuth2):
         return self.request_user_info(access_token)
 
 
-@receiver(post_save, sender=User)
+@receiver(post_save, sender=get_user_model())
 def add_user_groups(sender, instance, created, **kwargs):
     if instance.social_auth.count() > 0:
         social = instance.social_auth.all()[0]
@@ -112,5 +115,6 @@ def add_user_groups(sender, instance, created, **kwargs):
         # Add user to role groups
         if 'roles' in social.extra_data:
             for role in social.extra_data['roles']:
-                role_group, created = Group.objects.get_or_create(name=role.strip().lower())
+                group_model = get_group_model()
+                role_group, created = group_model.objects.get_or_create(name=role.strip().lower())
                 instance.groups.add(role_group)
