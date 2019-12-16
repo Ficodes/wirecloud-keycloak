@@ -202,7 +202,7 @@ class KeycloakPluginTestCase(TestCase):
             },
         }, plugin.get_platform_context_definitions())
 
-    def test_get_platform_context_current_values(self):
+    def test_get_platform_context_current_values_django1(self):
         user_mock = MagicMock()
         user_mock.is_authenticated.return_value = True
         social_mock = MagicMock()
@@ -222,9 +222,28 @@ class KeycloakPluginTestCase(TestCase):
         user_mock.social_auth.filter.assert_called_once_with(provider='keycloak')
         social_mock.exists.assert_called_once_with()
 
+    def test_get_platform_context_current_values(self):
+        user_mock = MagicMock()
+        user_mock.is_authenticated = True
+        social_mock = MagicMock()
+        social_mock.exists.return_value = True
+        user_mock.social_auth.filter.return_value = social_mock
+
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        self.assertEqual({
+            'fiware_token_available': True
+        }, plugin.get_platform_context_current_values(user_mock))
+        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak')
+        social_mock.exists.assert_called_once_with()
+
     def test_get_platform_context_current_values_not_enabled(self):
         user_mock = MagicMock()
-        user_mock.is_authenticated.return_value = True
+        user_mock.is_authenticated = True
         social_mock = MagicMock()
         social_mock.exists.return_value = True
         user_mock.social_auth.filter.return_value = social_mock

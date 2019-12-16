@@ -67,7 +67,7 @@ class KeycloakViewTestCase(TestCase):
 
     @patch('django.conf.settings', new=MagicMock(FIWARE_PORTALS=()))
     @patch('django.views.decorators.http.require_GET', new=get_decorator)
-    def test_login(self):
+    def test_login_django1(self):
         from wirecloud.keycloak import views
         reload(views)
 
@@ -88,6 +88,26 @@ class KeycloakViewTestCase(TestCase):
 
     @patch('django.conf.settings', new=MagicMock(FIWARE_PORTALS=()))
     @patch('django.views.decorators.http.require_GET', new=get_decorator)
+    def test_login(self):
+        from wirecloud.keycloak import views
+        reload(views)
+
+        response_mock = MagicMock()
+        views.HttpResponseRedirect = MagicMock(return_value=response_mock)
+        views.REDIRECT_FIELD_NAME = 'field'
+
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.GET.get.return_value = '/home'
+
+        response = views.login(request)
+
+        self.assertEqual(response_mock, response)
+        request.GET.get.assert_called_once_with('field', '/')
+        views.HttpResponseRedirect.assert_called_once_with('/home')
+
+    @patch('django.conf.settings', new=MagicMock(FIWARE_PORTALS=()))
+    @patch('django.views.decorators.http.require_GET', new=get_decorator)
     def test_login_not_authenticated(self):
         from wirecloud.keycloak import views
         reload(views)
@@ -96,14 +116,13 @@ class KeycloakViewTestCase(TestCase):
         views.HttpResponseRedirect = MagicMock(return_value=response_mock)
 
         request = MagicMock()
-        request.user.is_authenticated.return_value = False
+        request.user.is_authenticated = False
         views.reverse = MagicMock(return_value='/home')
         request.GET.urlencode.return_value = 'setting=test'
 
         response = views.login(request)
 
         self.assertEqual(response_mock, response)
-        request.user.is_authenticated.assert_called_once_with()
         request.GET.urlencode.assert_called_once_with()
         views.reverse.assert_called_once_with('social:begin', kwargs={'backend': 'keycloak'})
         views.HttpResponseRedirect.assert_called_once_with('/home?setting=test')

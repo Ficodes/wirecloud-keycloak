@@ -49,7 +49,7 @@ def oauth_discovery(request):
 
 @require_GET
 def login(request):
-    if request.user.is_authenticated():
+    if callable(request.user.is_authenticated) and request.user.is_authenticated() or request.user.is_authenticated is True:
         url = request.GET.get(REDIRECT_FIELD_NAME, '/')
     else:
         url = reverse('social:begin', kwargs={'backend': 'keycloak'}) + '?' + request.GET.urlencode()
