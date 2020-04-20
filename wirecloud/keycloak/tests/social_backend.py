@@ -162,7 +162,7 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         }
         details['is_superuser'] = True
         details['is_staff'] = True
-        details['roles'] = ['manager']
+        details['roles'] = ['admin', 'manager']
 
         self._test_get_user_details(resource, details)
 
@@ -180,6 +180,7 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         }
         details['is_superuser'] = True
         details['is_staff'] = True
+        details['roles'] = ['admin']
 
         self._test_get_user_details(resource, details)
 

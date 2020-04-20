@@ -82,7 +82,7 @@ class KeycloakOAuth2(BaseOAuth2):
                 roles = response['resource_access'][self.CLIENT_ID]['roles']
 
         superuser = any(role.strip().lower() == "admin" for role in roles)
-        group_roles = [role.strip().lower() for role in roles if role.strip().lower() != "admin"]
+        group_roles = [role.strip().lower() for role in roles]
 
         return {
             'username': response.get('preferred_username'),
