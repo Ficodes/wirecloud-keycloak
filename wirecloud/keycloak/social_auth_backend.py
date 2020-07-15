@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2020 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -18,74 +18,70 @@
 # along with Wirecloud.  If not, see <http://www.gnu.org/licenses/>.
 
 import base64
-import jwt
 from urllib.parse import urljoin
 
 from django.conf import settings
-from social_core.backends.oauth import BaseOAuth2
-
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from jose import jwk, jwt
+from social_core.backends.open_id_connect import OpenIdConnectAuth
 
 from wirecloud.keycloak.utils import get_user_model, get_group_model
 
 
-KEYCLOAK_AUTHORIZATION_ENDPOINT = 'auth/realms/{}/protocol/openid-connect/auth'
-KEYCLOAK_ACCESS_TOKEN_ENDPOINT = 'auth/realms/{}/protocol/openid-connect/token'
+KEYCLOAK_OIDC_ENDPOINT = 'auth/realms/{}'
 
 
-class KeycloakOAuth2(BaseOAuth2):
+class KeycloakOpenIdConnect(OpenIdConnectAuth):
     """Keycloak IDM OAuth authentication endpoint"""
 
-    name = 'keycloak'
+    name = 'keycloak_oidc'
     ID_KEY = 'preferred_username'
 
-    IDM_SERVER = getattr(settings, 'KEYCLOAK_SERVER', '')
-    REALM = getattr(settings, 'KEYCLOAK_REALM', '')
-    KEY = getattr(settings, 'KEYCLOAK_KEY', '')
-
-    CLIENT_ID = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_KEY', '')
-
-    ACCESS_TOKEN_URL = urljoin(IDM_SERVER, KEYCLOAK_ACCESS_TOKEN_ENDPOINT.format(REALM))
-    AUTHORIZATION_URL = urljoin(IDM_SERVER, KEYCLOAK_AUTHORIZATION_ENDPOINT.format(REALM))
-
-    REDIRECT_STATE = False
-    ACCESS_TOKEN_METHOD = 'POST'
-    SCOPE_VAR_NAME = 'FIWARE_EXTENDED_PERMISSIONS'
+    URL = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_URL', '')
+    REALM = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_REALM', '')
+    END_SESSION_URL = ''
+    JWT_DECODE_OPTIONS = {'verify_at_hash': False}
     EXTRA_DATA = [
-        ('username', 'username'),
-        ('refresh_token', 'refresh_token'),
+        'id_token',
+        'username',
+        'refresh_token',
         ('expires_in', 'expires'),
-        ('roles', 'roles')
+        ('sub', 'id'),
+        'roles'
     ]
 
     def __init__(self, *args, **kwargs):
-        super(KeycloakOAuth2, self).__init__(*args, **kwargs)
+        super(KeycloakOpenIdConnect, self).__init__(*args, **kwargs)
+        self.OIDC_ENDPOINT = urljoin(self.URL, KEYCLOAK_OIDC_ENDPOINT.format(self.REALM))
 
-    def auth_headers(self):
-        token = base64.urlsafe_b64encode(('{0}:{1}'.format(*self.get_key_and_secret()).encode())).decode()
-        return {
-            'Authorization': 'Basic {0}'.format(token)
-        }
+    def end_session_url(self):
+        return self.END_SESSION_URL or \
+            self.oidc_config().get('end_session_endpoint')
+
+    def auth_complete_params(self, state=None):
+        params = super(KeycloakOpenIdConnect, self).auth_complete_params(state)
+        params["client_session_state"] = self.strategy.request.session.session_key
+        return params
 
     def get_user_details(self, response):
         """Return user details from JWT token info"""
 
-        global_role = getattr(settings, 'KEYCLOAK_GLOBAL_ROLE', False)
+        global_role = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_GLOBAL_ROLE', False)
         roles = []
 
         if global_role:
-            if 'realm_access' in response and 'roles' in response['realm_access']:
-                roles = response['realm_access']['roles']
+            roles = response.get('realm_access', {}).get('roles', [])
         else:
-            if 'resource_access' in response and self.CLIENT_ID in response['resource_access'] and 'roles' in response['resource_access'][self.CLIENT_ID]:
-                roles = response['resource_access'][self.CLIENT_ID]['roles']
+            client_id, client_secret = self.get_key_and_secret()
+            roles = response.get('resource_access', {}).get(client_id, {}).get('roles', [])
 
         superuser = any(role.strip().lower() == "admin" for role in roles)
         group_roles = [role.strip().lower() for role in roles]
 
+        username_key = self.setting('USERNAME_KEY', default=self.USERNAME_KEY)
         return {
-            'username': response.get('preferred_username'),
+            'username': response.get(username_key),
             'email': response.get('email') or '',
             'fullname': response.get('name') or '',
             'first_name': response.get('given_name') or '',
@@ -95,14 +91,10 @@ class KeycloakOAuth2(BaseOAuth2):
             'roles': group_roles
         }
 
-    def request_user_info(self, access_token):
-        # Parse JWT to get user info
-        public_key = "-----BEGIN PUBLIC KEY-----\n" + self.KEY + "\n-----END PUBLIC KEY-----"
-        user_info = jwt.decode(access_token, public_key, algorithms='RS256', audience='account')
-        return user_info
-
-    def user_data(self, access_token, *args, **kwargs):
-        return self.request_user_info(access_token)
+    def parse_incomming_data(self, data):
+        key = self.find_valid_key(data)
+        rsakey = jwk.construct(key)
+        return jwt.decode(data, rsakey.to_pem().decode('utf-8'), algorithms=key['alg'], options={"verify": False})
 
 
 @receiver(post_save, sender=get_user_model())
