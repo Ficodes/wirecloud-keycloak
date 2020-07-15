@@ -42,7 +42,7 @@ setuptools.setup(
     include_package_data=True,
     install_requires=(
         "wirecloud>=1.2.0",
-        "pyJwt>=1.7.1",
-        "cryptography>=2.6.1"
+        "social-auth-core[openidconnect]",
+        "social-auth-app-django",
     )
 )

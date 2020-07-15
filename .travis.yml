@@ -6,9 +6,8 @@ python:
     - "3.5"
     - "3.6"
 install:
-    - pip install coverage
-    - pip install coveralls
-    - pip install "social-auth-app-django"
+    - pip install -q -e .
+    - pip install coverage coveralls
     - python setup.py develop
 
 script:
