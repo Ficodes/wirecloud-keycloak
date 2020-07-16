@@ -133,21 +133,23 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         self.assertEqual(backend.REALM, 'demo')
         self.assertEqual(backend.OIDC_ENDPOINT, 'http://server/auth/realms/demo')
 
-    def _test_get_user_details(self, resource, expected_details, global_role=False):
+    def _test_get_user_details(self, id_token, resource, expected_details, global_role=False):
         backend = self._mock_module()
+        backend.id_token = id_token
         details = backend.get_user_details(resource)
 
         self.assertEqual(details, expected_details)
         self.assertEquals(self._strategy, backend.STRATEGY)
 
     def test_get_user_details_regular(self):
-        self._test_get_user_details(self.TOKEN_INFO, self.DETAILS)
+        self._test_get_user_details(self.TOKEN_INFO, self.TOKEN_INFO, self.DETAILS)
 
     def test_get_user_details_admin(self):
+        id_token = deepcopy(self.TOKEN_INFO)
         resource = deepcopy(self.TOKEN_INFO)
         details = deepcopy(self.DETAILS)
 
-        resource['resource_access'] = {
+        id_token['resource_access'] = {
             'client': {
                 'roles': ['admin', 'manager']
             }
@@ -156,22 +158,23 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         details['is_staff'] = True
         details['roles'] = ['admin', 'manager']
 
-        self._test_get_user_details(resource, details)
+        self._test_get_user_details(id_token, resource, details)
 
     def test_get_user_details_admin_global(self):
 
         self._settings.SOCIAL_AUTH_KEYCLOAK_OIDC_GLOBAL_ROLE = True
+        id_token = deepcopy(self.TOKEN_INFO)
         resource = deepcopy(self.TOKEN_INFO)
         details = deepcopy(self.DETAILS)
 
-        resource['realm_access'] = {
+        id_token['realm_access'] = {
             'roles': ['admin']
         }
         details['is_superuser'] = True
         details['is_staff'] = True
         details['roles'] = ['admin']
 
-        self._test_get_user_details(resource, details)
+        self._test_get_user_details(id_token, resource, details)
 
     def test_end_session_url_from_dynamic_config(self):
         backend = self._mock_module()
