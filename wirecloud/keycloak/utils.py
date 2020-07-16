@@ -25,12 +25,12 @@ def build_version_hash():
 
 def build_backend():
     from social_django.utils import BACKENDS, get_backend,  load_strategy
-    return get_backend(BACKENDS, 'keycloak')(load_strategy())
+    return get_backend(BACKENDS, 'keycloak_oidc')(load_strategy())
 
 
 def build_simple_backend():
     from social_django.utils import BACKENDS, get_backend
-    return get_backend(BACKENDS, 'keycloak')
+    return get_backend(BACKENDS, 'keycloak_oidc')
 
 
 def load_strategy():

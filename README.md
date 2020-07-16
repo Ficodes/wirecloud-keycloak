@@ -15,11 +15,10 @@ pip install wirecloud-keycloak
 Or using the sources:
 
 ```
-python setup.py develop
+python setup.py install
 ```
 
-Once installed, it can be enabled by including *wirecloud.keycloak* and *social_django*
-in INSTALLED_APPS setting, and addiding *KeycloakOAuth2* as an authentication backend.
+Once installed, it can be enabled by editing your `settings.py` file and including `wirecloud.keycloak` and `social_django` on the `INSTALLED_APPS` setting, addiding `KeycloakOpenIdConnect` as the authentication backend to use and configuring it.
 
 ```
 INSTALLED_APPS += (
@@ -30,26 +29,26 @@ INSTALLED_APPS += (
     'social_django'
 )
 
-AUTHENTICATION_BACKENDS = ('wirecloud.keycloak.social_auth_backend.KeycloakOAuth2',)
-```
+AUTHENTICATION_BACKENDS = ('wirecloud.keycloak.social_auth_backend.KeycloakOpenIdConnect',)
 
-Finally the following settings need to be included in *setting.py* file.
+SOCIAL_AUTH_NO_DEFAULT_PROTECTED_USER_FIELDS = True
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ('username', 'id', 'pk', 'email', 'password', 'is_active')
 
-```
-KEYCLOAK_SERVER = 'http://keycloak.docker:8080'
-KEYCLOAK_REALM = 'demo'
-KEYCLOAK_KEY = 'MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAkY9D3w8J/NPtD2DT/fvPwvrU0WBtw7F6mDTV8JG3TjsrQF4HCEjExDYN9M+5GeJTu8WNfDFUzEfuq7OS/3FRLgZJnV0naYlQsH50l5vCzMD2p9vSSECHBDuz/woObHujgtQckPDv7wyWjihn4EJthI4K08Fb06quijux0M+mazF5WDqlOy3UuKlfERv8JskpOBjwnhCMwz5zv/ox8Y++AiBXlL4stqok29AXANt29+A8LvYDNXiSYuHZJeAk3oxI7G8PYQHFOTynR41hm8xNxPf8YSx2nS7ZfHBPtt9rz7QdPZ9LmXwKPpo+ml92YfHSPcmW2beOuILJ1DW8ZO5eZQIDAQAB'
-
-SOCIAL_AUTH_KEYCLOAK_KEY = 'wirecloud'
-SOCIAL_AUTH_KEYCLOAK_SECRET = '7667d30b-4e1a-4dfe-a040-0b6fdc4758f5'
-KEYCLOAK_GLOBAL_ROLE = True
-
+SOCIAL_AUTH_KEYCLOAK_OIDC_URL = 'https://keycloak.example.com'
+SOCIAL_AUTH_KEYCLOAK_OIDC_REALM = 'demo'
+SOCIAL_AUTH_KEYCLOAK_OIDC_KEY = 'wirecloud'
+SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET = '7667d30b-4e1a-4dfe-a040-0b6fdc4758f5'
+SOCIAL_AUTH_KEYCLOAK_OIDC_GLOBAL_ROLE = True
 ```
 
 These settings include:
-* **KEYCLOAK_SERVER**: URL of the Keycloak instance
-* **KEYCLOAK_REALM**: Keycloak realm where WireCloud is registered
-* **KEYCLOAK_KEY**: RSA Key used to decode JWT
-* **SOCIAL_AUTH_KEYCLOAK_KEY**: Client ID of the WireCloud application
-* **SOCIAL_AUTH_KEYCLOAK_SECRET**: Client secret of the WireCloud application
-* **KEYCLOAK_GLOBAL_ROLE**: Whether the admin role is taken from the realm instead of from the client (default: False)
+
+* `SOCIAL_AUTH_KEYCLOAK_OIDC_URL`: URL of the Keycloak server
+* `SOCIAL_AUTH_KEYCLOAK_OIDC_REALM`: Keycloak realm where WireCloud is registered
+* `SOCIAL_AUTH_KEYCLOAK_OIDC_KEY`: Client ID of the WireCloud application
+* `SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET`: Client secret of the WireCloud application
+* `SOCIAL_AUTH_KEYCLOAK_OIDC_GLOBAL_ROLE`: Whether the admin role is taken from the realm instead of from the client (default: `False`)
+
+This plugin is able to map Keycloak roles into WireCloud groups. To enable it, you should enable the `realm roles` and the `client roles` mappings either for the wirecloud application or for the `roles` scope. This mapping should include role information on the ID token.
+
+Finally, to add backchannel logout support (Single Sign Off), the following code: `url('', include('wirecloud.keycloak.urls')),` has to be added inside the urlpatterns list defined on your `urls.py` file. Once done this, you can access the Keycloak console to configure the **Admin URL** of the WireCloud application to point into the following url: `http(s)://wirecloud.example.com/keycloak`.

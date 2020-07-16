@@ -25,7 +25,7 @@ def read(fname):
 
 setuptools.setup(
     name='wirecloud-keycloak',
-    version='0.2.4',
+    version='0.3.0',
     author="FICODES",
     author_email="contact@ficodes.com",
     description="WireCloud extension supporting authentication with Keycloak IDM",
@@ -42,7 +42,7 @@ setuptools.setup(
     include_package_data=True,
     install_requires=(
         "wirecloud>=1.2.0",
-        "pyJwt>=1.7.1",
-        "cryptography>=2.6.1"
+        "social-auth-core[openidconnect]",
+        "social-auth-app-django",
     )
 )
