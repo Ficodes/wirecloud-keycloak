@@ -31,12 +31,14 @@ INSTALLED_APPS += (
 
 AUTHENTICATION_BACKENDS = ('wirecloud.keycloak.social_auth_backend.KeycloakOpenIdConnect',)
 
+SOCIAL_AUTH_NO_DEFAULT_PROTECTED_USER_FIELDS = True
+SOCIAL_AUTH_PROTECTED_USER_FIELDS = ('username', 'id', 'pk', 'email', 'password', 'is_active')
+
 SOCIAL_AUTH_KEYCLOAK_OIDC_URL = 'https://keycloak.example.com'
 SOCIAL_AUTH_KEYCLOAK_OIDC_REALM = 'demo'
 SOCIAL_AUTH_KEYCLOAK_OIDC_KEY = 'wirecloud'
 SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET = '7667d30b-4e1a-4dfe-a040-0b6fdc4758f5'
 SOCIAL_AUTH_KEYCLOAK_OIDC_GLOBAL_ROLE = True
-
 ```
 
 These settings include:
@@ -47,5 +49,6 @@ These settings include:
 * `SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET`: Client secret of the WireCloud application
 * `SOCIAL_AUTH_KEYCLOAK_OIDC_GLOBAL_ROLE`: Whether the admin role is taken from the realm instead of from the client (default: `False`)
 
-Finally, to add backchannel logout support (Single Sign Off), the following
-code: `url('', include('wirecloud.keycloak.urls')),` has to be added inside the urlpatterns list defined on your `urls.py` file. Once done this, you can access the Keycloak console to configure the **Admin URL** of the WireCloud application to point into the following url: `http(s)://wirecloud.example.com/keycloak`.
+This plugin is able to map Keycloak roles into WireCloud groups. To enable it, you should enable the `realm roles` and the `client roles` mappings either for the wirecloud application or for the `roles` scope. This mapping should include role information on the ID token.
+
+Finally, to add backchannel logout support (Single Sign Off), the following code: `url('', include('wirecloud.keycloak.urls')),` has to be added inside the urlpatterns list defined on your `urls.py` file. Once done this, you can access the Keycloak console to configure the **Admin URL** of the WireCloud application to point into the following url: `http(s)://wirecloud.example.com/keycloak`.

@@ -65,16 +65,16 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
         return params
 
     def get_user_details(self, response):
-        """Return user details from JWT token info"""
+        """Return user details from the returned userinfo endpoint and from the id_token"""
 
         global_role = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_GLOBAL_ROLE', False)
         roles = []
 
         if global_role:
-            roles = response.get('realm_access', {}).get('roles', [])
+            roles = self.id_token.get('realm_access', {}).get('roles', [])
         else:
             client_id, client_secret = self.get_key_and_secret()
-            roles = response.get('resource_access', {}).get(client_id, {}).get('roles', [])
+            roles = self.id_token.get('resource_access', {}).get(client_id, {}).get('roles', [])
 
         superuser = any(role.strip().lower() == "admin" for role in roles)
         group_roles = [role.strip().lower() for role in roles]
