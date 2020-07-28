@@ -61,7 +61,14 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
 
     def auth_complete_params(self, state=None):
         params = super(KeycloakOpenIdConnect, self).auth_complete_params(state)
-        params["client_session_state"] = self.strategy.request.session.session_key
+        session = self.strategy.request.session
+        # Force new session key
+        session.cycle_key()
+        # Disable session key cycling on authentication
+        session.cycle_key = lambda: None
+        session.flush = session.clear
+        # Send new session id to Keycloak
+        params["client_session_state"] = session.session_key
         return params
 
     def get_user_details(self, response):
