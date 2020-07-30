@@ -23,6 +23,7 @@ from urllib.parse import urljoin
 from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.utils.translation import get_language
 from jose import jwk, jwt
 from social_core.backends.open_id_connect import OpenIdConnectAuth
 
@@ -69,6 +70,11 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
         session.flush = session.clear
         # Send new session id to Keycloak
         params["client_session_state"] = session.session_key
+        return params
+
+    def auth_extra_arguments(self):
+        params = super(KeycloakOpenIdConnect, self).auth_extra_arguments() or {}
+        params['kc_locale'] = get_language()
         return params
 
     def get_user_details(self, response):

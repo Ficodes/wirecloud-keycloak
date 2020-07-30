@@ -41,6 +41,9 @@ class BaseOAuthMock():
     def __init__(self, strategy):
         self.STRATEGY = strategy
 
+    def auth_extra_arguments(self):
+        return {}
+
     def auth_complete_params(self, state=None):
         return {}
 
@@ -125,6 +128,18 @@ class KeycloakSocialAuthBackendTestCase(TestCase):
         params = backend.auth_complete_params()
 
         self.assertEqual(params["client_session_state"], "a-session-id")
+
+    @patch('wirecloud.keycloak.social_auth_backend.get_language')
+    def test_eauth_extra_arguments(self, get_language):
+        backend = self._mock_module()
+        params = backend.auth_extra_arguments()
+
+        self.assertEqual(
+            params,
+            {
+                "kc_locale": get_language()
+            }
+        )
 
     def test_class_params(self):
         backend = self._mock_module()
