@@ -88,7 +88,7 @@ class IDMTokenProcessorTestCase(TestCase):
         self._text_proxy_processor(request)
 
         # Validate oauth info calls
-        user.social_auth.get.assert_called_once_with(provider='keycloak')
+        user.social_auth.get.assert_called_once_with(provider='keycloak_oidc')
         oauth_info.access_token_expired.assert_called_once_with()
         self.assertEqual(0, oauth_info.refresh_token.call_count)
 
@@ -128,7 +128,7 @@ class IDMTokenProcessorTestCase(TestCase):
         self._text_proxy_processor(request)
 
         # Validate oauth info calls
-        user.social_auth.get.assert_called_once_with(provider='keycloak')
+        user.social_auth.get.assert_called_once_with(provider='keycloak_oidc')
         oauth_info.access_token_expired.assert_called_once_with()
         oauth_info.refresh_token.assert_called_once_with(self._strategy)
 

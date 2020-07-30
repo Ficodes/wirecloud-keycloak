@@ -123,7 +123,7 @@ class KeycloakPluginTestCase(TestCase):
 
         self.assertEqual(user_mock, token['Bearer']('bearer', 'token'))
 
-        social_mock.objects.get.assert_called_once_with(provider='keycloak', uid='user')
+        social_mock.objects.get.assert_called_once_with(provider='keycloak_oidc', uid='user')
         user_data_mock.user_data.assert_called_once_with('token')
 
     @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET))
@@ -218,7 +218,7 @@ class KeycloakPluginTestCase(TestCase):
             'fiware_token_available': True
         }, plugin.get_platform_context_current_values(user_mock))
         user_mock.is_authenticated.assert_called_once_with()
-        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak')
+        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak_oidc')
         social_mock.exists.assert_called_once_with()
 
     def test_get_platform_context_current_values(self):
@@ -237,7 +237,7 @@ class KeycloakPluginTestCase(TestCase):
         self.assertEqual({
             'fiware_token_available': True
         }, plugin.get_platform_context_current_values(user_mock))
-        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak')
+        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak_oidc')
         social_mock.exists.assert_called_once_with()
 
     def test_get_platform_context_current_values_not_enabled(self):

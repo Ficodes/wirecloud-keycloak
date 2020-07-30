@@ -43,7 +43,7 @@ def auth_keycloak_token(auth_type, token):
 
     UserSocialAuth = get_social_auth_model()
     user_data = KEYCLOAK_SOCIAL_AUTH_BACKEND.user_data(token)
-    return UserSocialAuth.objects.get(provider='keycloak', uid=user_data['username']).user
+    return UserSocialAuth.objects.get(provider='keycloak_oidc', uid=user_data['username']).user
 
 
 class KeycloakPlugin(WirecloudPlugin):
@@ -96,9 +96,9 @@ class KeycloakPlugin(WirecloudPlugin):
         if not IDM_SUPPORT_ENABLED:
             fiware_token_available = False
         elif callable(user.is_authenticated):
-            fiware_token_available = user.is_authenticated() and user.social_auth.filter(provider='keycloak').exists()
+            fiware_token_available = user.is_authenticated() and user.social_auth.filter(provider='keycloak_oidc').exists()
         else:
-            fiware_token_available = user.is_authenticated and user.social_auth.filter(provider='keycloak').exists()
+            fiware_token_available = user.is_authenticated and user.social_auth.filter(provider='keycloak_oidc').exists()
         return {
             'fiware_token_available': fiware_token_available
         }

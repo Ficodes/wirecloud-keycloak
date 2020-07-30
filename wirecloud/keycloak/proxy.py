@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2020 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -39,7 +39,7 @@ def get_access_token(user, error_msg):
     "Gets the access_token of a user using python-social-auth"
 
     try:
-        oauth_info = user.social_auth.get(provider='keycloak')
+        oauth_info = user.social_auth.get(provider='keycloak_oidc')
         if oauth_info.access_token is None:
             raise Exception
 
