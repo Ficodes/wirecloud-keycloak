@@ -33,7 +33,7 @@ try:
     KEYCLOAK_SOCIAL_AUTH_BACKEND = build_backend()
 
     IDM_SUPPORT_ENABLED = 'wirecloud.keycloak' in settings.INSTALLED_APPS and 'social_django' in settings.INSTALLED_APPS \
-        and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_KEY', None) is not None and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_SECRET', None) is not None
+        and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_KEY', None) is not None and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET', None) is not None
 
 except:
     IDM_SUPPORT_ENABLED = False
@@ -71,8 +71,7 @@ class KeycloakPlugin(WirecloudPlugin):
 
         if IDM_SUPPORT_ENABLED:
             global KEYCLOAK_SOCIAL_AUTH_BACKEND
-            #import wirecloud.keycloak.social_auth_backend
-            constants["KEYCLOAK_SERVER"] = KEYCLOAK_SOCIAL_AUTH_BACKEND.IDM_SERVER
+            constants["KEYCLOAK_URL"] = KEYCLOAK_SOCIAL_AUTH_BACKEND.URL
 
         return constants
 
