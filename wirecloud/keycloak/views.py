@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019-2020 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2021 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -18,6 +18,7 @@
 # along with Wirecloud.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
+import logging
 from urllib.parse import quote
 
 from django.conf import settings
@@ -32,6 +33,9 @@ from wirecloud.commons.utils.http import build_error_response, get_absolute_reve
 from wirecloud.keycloak.utils import build_backend
 
 ALLOWED_ORIGINS = [portal['url'] for portal in getattr(settings, 'FIWARE_PORTALS', ())]
+
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 
 @require_GET
@@ -101,11 +105,13 @@ def logout(request):
 def keycloak_k_logout(request):
     backend = build_backend()
     data = backend.parse_incomming_data(request.body.decode('utf-8'))
+    logger.debug("processing backchannel logout request")
 
     from importlib import import_module
     ss = import_module(settings.SESSION_ENGINE).SessionStore()
 
     for session_key in data.get('adapterSessionIds', ()):
+        logger.debug("removing session {}".format(session_key))
         ss.delete(session_key=session_key)
 
     return HttpResponse(status=204)

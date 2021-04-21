@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019-2020 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2021 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -17,7 +17,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with Wirecloud.  If not, see <http://www.gnu.org/licenses/>.
 
-import base64
+import logging
 from urllib.parse import urljoin
 
 from django.conf import settings
@@ -29,6 +29,8 @@ from social_core.backends.open_id_connect import OpenIdConnectAuth
 
 from wirecloud.keycloak.utils import get_user_model, get_group_model
 
+# Get an instance of a logger
+logger = logging.getLogger(__name__)
 
 KEYCLOAK_OIDC_ENDPOINT = 'auth/realms/{}'
 
@@ -69,6 +71,7 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
         session.cycle_key = lambda: None
         session.flush = session.clear
         # Send new session id to Keycloak
+        logger.debug("requesting openid connect credentials associated with session {}".format(session.session_key))
         params["client_session_state"] = session.session_key
         return params
 
