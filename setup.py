@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019-2020 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2021 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -20,12 +20,14 @@
 import os
 import setuptools
 
+
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
 
+
 setuptools.setup(
     name='wirecloud-keycloak',
-    version='0.3.4',
+    version='0.3.5',
     author="FICODES",
     author_email="contact@ficodes.com",
     description="WireCloud extension supporting authentication with Keycloak IDM",
