@@ -1,6 +1,6 @@
 # WireCloud Keycloak plugin
 
-[![Build Status](https://travis-ci.org/Ficodes/wirecloud-keycloak.svg?branch=master)](https://travis-ci.org/Ficodes/wirecloud-keycloak)
+[![Tests](https://github.com/Ficodes/wirecloud-keycloak/actions/workflows/tests.yml/badge.svg)](https://github.com/Ficodes/wirecloud-keycloak/actions/workflows/tests.yml)
 [![Coverage Status](https://coveralls.io/repos/github/Ficodes/wirecloud-keycloak/badge.svg?branch=master)](https://coveralls.io/github/Ficodes/wirecloud-keycloak?branch=master)
 
 This WireCloud plugin allows the usage of Keycloak as IDM for the authentication of WireCloud
