@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 # Copyright (c) 2019-2021 Future Internet Consulting and Development Solutions S.L.
@@ -18,11 +19,13 @@
 # along with Wirecloud.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+
 import setuptools
 
 
 def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+    with open(os.path.join(os.path.dirname(__file__), fname)) as f:
+        return f.read()
 
 
 setuptools.setup(
@@ -42,9 +45,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     include_package_data=True,
-    install_requires=(
-        "wirecloud>=1.2.0",
-        "social-auth-core[openidconnect]",
-        "social-auth-app-django",
+    install_requires=read('./requirements.txt'),
+    tests_require=(),
+    setup_requires=(
+        'wheel>=0.24',
     )
 )

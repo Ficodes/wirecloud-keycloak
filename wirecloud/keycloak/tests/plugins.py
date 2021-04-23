@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2021 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -19,7 +19,6 @@
 
 import unittest
 from importlib import reload
-
 from unittest import TestCase
 from unittest.mock import patch, MagicMock
 
@@ -43,10 +42,14 @@ class KeycloakPluginTestCase(TestCase):
         self._backend = MagicMock()
 
     @patch('wirecloud.platform.plugins.WirecloudPlugin', new=WirecloudPluginMock)
-    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
             'wirecloud.keycloak',
-            'social_django'
-        ), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET))
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
     @patch('wirecloud.keycloak.utils.build_backend', new=MagicMock())
     @patch('django.utils.translation.ugettext_lazy')
     def test_get_urls(self, translation_mock):
@@ -86,7 +89,11 @@ class KeycloakPluginTestCase(TestCase):
 
         url_mock.assert_called_once_with('^.well-known/oauth$', 'cache', name='oauth.discovery')
 
-    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET))
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
     def test_get_urls_not_enabled(self):
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
@@ -126,7 +133,11 @@ class KeycloakPluginTestCase(TestCase):
         social_mock.objects.get.assert_called_once_with(provider='keycloak_oidc', uid='user')
         user_data_mock.user_data.assert_called_once_with('token')
 
-    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET))
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
     def test_get_api_backends_not_enabled(self):
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
@@ -144,7 +155,7 @@ class KeycloakPluginTestCase(TestCase):
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
 
-        backend_mock = MagicMock(IDM_SERVER='http://idm.docker')
+        backend_mock = MagicMock(URL='http://idm.docker')
         wirecloud.keycloak.plugins.KEYCLOAK_SOCIAL_AUTH_BACKEND = backend_mock
 
         wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
@@ -153,9 +164,8 @@ class KeycloakPluginTestCase(TestCase):
         const = plugin.get_constants()
 
         self.assertEqual({
-            'KEYCLOAK_SERVER': 'http://idm.docker'
+            'KEYCLOAK_URL': 'http://idm.docker'
         }, const)
-
 
     @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=()))
     def test_get_constants_not_enabled(self):
@@ -257,10 +267,15 @@ class KeycloakPluginTestCase(TestCase):
             'fiware_token_available': False
         }, plugin.get_platform_context_current_values(user_mock))
 
-    @patch('django.conf.settings', new=MagicMock(INSTALLED_APPS=(
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
             'wirecloud.keycloak',
-            'social_django'
-        ), SOCIAL_AUTH_KEYCLOAK_KEY=KEY, SOCIAL_AUTH_KEYCLOAK_SECRET=SECRET, KEYCLOAK_SERVER='http://idm.docker'))
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_URL='http://idm.docker',
+    ))
     def test_get_django_template_context_processors(self):
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
@@ -270,7 +285,10 @@ class KeycloakPluginTestCase(TestCase):
 
         processors = plugin.get_django_template_context_processors()
         self.assertEqual({
-            'KEYCLOAK_SERVER': 'http://idm.docker',
+            'FIWARE_IDM_SERVER': 'http://idm.docker',
+            'FIWARE_IDM_PUBLIC_URL': 'http://idm.docker',
+            'KEYCLOAK_URL': 'http://idm.docker',
+            'KEYCLOAK_PUBLIC_URL': 'http://idm.docker',
         }, processors)
 
     def test_get_django_template_context_processors_not_enabled(self):
@@ -282,7 +300,10 @@ class KeycloakPluginTestCase(TestCase):
 
         processors = plugin.get_django_template_context_processors()
         self.assertEqual({
-            'KEYCLOAK_SERVER': None,
+            'FIWARE_IDM_SERVER': None,
+            'FIWARE_IDM_PUBLIC_URL': None,
+            'KEYCLOAK_URL': None,
+            'KEYCLOAK_PUBLIC_URL': None,
         }, processors)
 
 
