@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2021 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -16,8 +16,6 @@
 
 # You should have received a copy of the GNU Affero General Public License
 # along with Wirecloud.  If not, see <http://www.gnu.org/licenses/>.
-
-import os
 
 from django.conf import settings
 from django.conf.urls import url
@@ -35,7 +33,7 @@ try:
     IDM_SUPPORT_ENABLED = 'wirecloud.keycloak' in settings.INSTALLED_APPS and 'social_django' in settings.INSTALLED_APPS \
         and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_KEY', None) is not None and getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET', None) is not None
 
-except:
+except Exception:
     IDM_SUPPORT_ENABLED = False
 
 
@@ -105,10 +103,16 @@ class KeycloakPlugin(WirecloudPlugin):
     def get_django_template_context_processors(self):
         context = {}
 
-        # Using FIWARE name in context for compatibility with existing templates
         if IDM_SUPPORT_ENABLED:
-            context["KEYCLOAK_SERVER"] = getattr(settings, "KEYCLOAK_SERVER", '')
+            context["KEYCLOAK_URL"] = getattr(settings, "SOCIAL_AUTH_KEYCLOAK_OIDC_URL", '')
+            # We don't support using different URLs for internal and public use
+            context["KEYCLOAK_PUBLIC_URL"] = context["KEYCLOAK_URL"]
         else:
-            context["KEYCLOAK_SERVER"] = None
+            context["KEYCLOAK_URL"] = None
+            context["KEYCLOAK_PUBLIC_URL"] = None
+
+        # Using FIWARE context variables for compatibility with existing template
+        context["FIWARE_IDM_SERVER"] = context["KEYCLOAK_URL"]
+        context["FIWARE_IDM_PUBLIC_URL"] = context["KEYCLOAK_PUBLIC_URL"]
 
         return context
