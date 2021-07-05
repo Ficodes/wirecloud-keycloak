@@ -41,6 +41,37 @@ class KeycloakPluginTestCase(TestCase):
         self._wirecloud_plugin = MagicMock()
         self._backend = MagicMock()
 
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(),
+    ))
+    @patch("wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED", new=False)
+    def test_get_ajax_endpoints_disabled(self):
+        import wirecloud.keycloak.plugins
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        endpoints = plugin.get_ajax_endpoints("classic")
+
+        keys = set(e["id"] for e in endpoints)
+        self.assertEqual(set(), keys)
+
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
+            'wirecloud.keycloak',
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
+    @patch("wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED", new=True)
+    def test_get_ajax_endpoints_enabled(self):
+        import wirecloud.keycloak.plugins
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        endpoints = plugin.get_ajax_endpoints("classic")
+
+        keys = set(e["id"] for e in endpoints)
+        self.assertEqual(set(("KEYCLOAK_LOGIN_STATUS_IFRAME",)), keys)
+
     @patch('wirecloud.platform.plugins.WirecloudPlugin', new=WirecloudPluginMock)
     @patch('django.conf.settings', new=MagicMock(
         INSTALLED_APPS=(
@@ -202,21 +233,29 @@ class KeycloakPluginTestCase(TestCase):
     def test_get_platform_context_definitions(self):
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
-
         plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
-        self.assertEqual({
-            'fiware_token_available': {
-                'label': 'FIWARE token available',
-                'description': 'Indicates if the current user has associated a FIWARE auth token that can be used for accessing other FIWARE resources',
-            },
-        }, plugin.get_platform_context_definitions())
 
+        context_definitions = plugin.get_platform_context_definitions()
+
+        for key in ("fiware_token_available", "keycloak_client_id", "keycloak_session"):
+            self.assertIn(key, context_definitions)
+            self.assertIn("label", context_definitions[key])
+            self.assertIn("description", context_definitions[key])
+
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
+            'wirecloud.keycloak',
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
     def test_get_platform_context_current_values_django1(self):
+        session_state = "ad8fd2c6-0322-4f32-bf2e-eaee28453050"
         user_mock = MagicMock()
         user_mock.is_authenticated.return_value = True
-        social_mock = MagicMock()
-        social_mock.exists.return_value = True
-        user_mock.social_auth.filter.return_value = social_mock
+        social_mock = user_mock.social_auth.values_list()
+        social_mock.get.return_value = {"session_state": session_state}
 
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
@@ -225,18 +264,28 @@ class KeycloakPluginTestCase(TestCase):
         plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
 
         self.assertEqual({
-            'fiware_token_available': True
+            "fiware_token_available": True,
+            "keycloak_client_id": self.KEY,
+            "keycloak_session": session_state
         }, plugin.get_platform_context_current_values(user_mock))
         user_mock.is_authenticated.assert_called_once_with()
-        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak_oidc')
-        social_mock.exists.assert_called_once_with()
+        social_mock.get.assert_called_once_with(provider="keycloak_oidc")
 
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
+            'wirecloud.keycloak',
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
     def test_get_platform_context_current_values(self):
+        session_state = "ad8fd2c6-0322-4f32-bf2e-eaee28453050"
         user_mock = MagicMock()
         user_mock.is_authenticated = True
         social_mock = MagicMock()
-        social_mock.exists.return_value = True
-        user_mock.social_auth.filter.return_value = social_mock
+        social_mock = user_mock.social_auth.values_list()
+        social_mock.get.return_value = {"session_state": session_state}
 
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
@@ -245,17 +294,51 @@ class KeycloakPluginTestCase(TestCase):
         plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
 
         self.assertEqual({
-            'fiware_token_available': True
+            "fiware_token_available": True,
+            "keycloak_client_id": self.KEY,
+            "keycloak_session": session_state
         }, plugin.get_platform_context_current_values(user_mock))
-        user_mock.social_auth.filter.assert_called_once_with(provider='keycloak_oidc')
-        social_mock.exists.assert_called_once_with()
+        social_mock.get.assert_called_once_with(provider="keycloak_oidc")
 
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
+            'wirecloud.keycloak',
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
+    def test_get_platform_context_current_values_no_token(self):
+        user_mock = MagicMock()
+        user_mock.is_authenticated = True
+        user_mock.social_auth.model.DoesNotExist = ValueError
+        social_mock = MagicMock()
+        social_mock = user_mock.social_auth.values_list()
+        social_mock.get.side_effect = user_mock.social_auth.model.DoesNotExist
+
+        import wirecloud.keycloak.plugins
+        reload(wirecloud.keycloak.plugins)
+
+        wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED = True
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        self.assertEqual({
+            "fiware_token_available": False,
+            "keycloak_client_id": self.KEY,
+            "keycloak_session": ""
+        }, plugin.get_platform_context_current_values(user_mock))
+        social_mock.get.assert_called_once_with(provider="keycloak_oidc")
+
+    @patch('django.conf.settings', new=MagicMock(
+        spec=["INSTALLED_APPS"],
+        INSTALLED_APPS=(),
+    ))
     def test_get_platform_context_current_values_not_enabled(self):
         user_mock = MagicMock()
         user_mock.is_authenticated = True
         social_mock = MagicMock()
-        social_mock.exists.return_value = True
-        user_mock.social_auth.filter.return_value = social_mock
+        social_mock = user_mock.social_auth.values_list()
+        social_mock.get.side_effect = TypeError
 
         import wirecloud.keycloak.plugins
         reload(wirecloud.keycloak.plugins)
@@ -264,7 +347,9 @@ class KeycloakPluginTestCase(TestCase):
         plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
 
         self.assertEqual({
-            'fiware_token_available': False
+            "fiware_token_available": False,
+            "keycloak_client_id": "",
+            "keycloak_session": ""
         }, plugin.get_platform_context_current_values(user_mock))
 
     @patch('django.conf.settings', new=MagicMock(
@@ -305,6 +390,32 @@ class KeycloakPluginTestCase(TestCase):
             'KEYCLOAK_URL': None,
             'KEYCLOAK_PUBLIC_URL': None,
         }, processors)
+
+    @patch("wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED", new=False)
+    def test_get_scripts_disabled(self):
+        import wirecloud.keycloak.plugins
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        scripts = plugin.get_scripts("classic")
+
+        self.assertIsInstance(scripts, tuple)
+
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
+            'wirecloud.keycloak',
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
+    @patch("wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED", new=True)
+    def test_get_scripts_enabled(self):
+        import wirecloud.keycloak.plugins
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        scripts = plugin.get_scripts("classic")
+
+        self.assertIsInstance(scripts, tuple)
 
 
 if __name__ == "__main__":

@@ -45,6 +45,7 @@ def auth_keycloak_token(auth_type, token):
 
 
 class KeycloakPlugin(WirecloudPlugin):
+
     def get_urls(self):
 
         if IDM_SUPPORT_ENABLED:
@@ -63,6 +64,15 @@ class KeycloakPlugin(WirecloudPlugin):
             }
         else:
             return {}
+
+    def get_ajax_endpoints(self, view):
+
+        if IDM_SUPPORT_ENABLED:
+            return (
+                {"id": "KEYCLOAK_LOGIN_STATUS_IFRAME", "url": KEYCLOAK_SOCIAL_AUTH_BACKEND.oidc_config().get("check_session_iframe")},
+            )
+        else:
+            return ()
 
     def get_constants(self):
         constants = {}
@@ -86,18 +96,33 @@ class KeycloakPlugin(WirecloudPlugin):
                 'label': _('FIWARE token available'),
                 'description': _('Indicates if the current user has associated a FIWARE auth token that can be used for accessing other FIWARE resources'),
             },
+            'keycloak_client_id': {
+                'label': _('Keycloak Client Id'),
+                'description': _('Client Id associated with this instance of WireCloud'),
+            },
+            'keycloak_session': {
+                'label': _('Keycloak session'),
+                'description': _('Session id'),
+            },
         }
 
     def get_platform_context_current_values(self, user, **kwargs):
         # Work around bug when running manage.py compress
         if not IDM_SUPPORT_ENABLED:
-            fiware_token_available = False
-        elif callable(user.is_authenticated):
-            fiware_token_available = user.is_authenticated() and user.social_auth.filter(provider='keycloak_oidc').exists()
+            token_info = None
         else:
-            fiware_token_available = user.is_authenticated and user.social_auth.filter(provider='keycloak_oidc').exists()
+            try:
+                if callable(user.is_authenticated):
+                    token_info = user.social_auth.values_list("extra_data", flat=True).get(provider="keycloak_oidc") if user.is_authenticated() else None
+                else:
+                    token_info = user.social_auth.values_list("extra_data", flat=True).get(provider="keycloak_oidc") if user.is_authenticated else None
+            except user.social_auth.model.DoesNotExist:
+                token_info = None
+
         return {
-            'fiware_token_available': fiware_token_available
+            'fiware_token_available': token_info is not None,
+            'keycloak_client_id': getattr(settings, "SOCIAL_AUTH_KEYCLOAK_OIDC_KEY", ""),
+            'keycloak_session': token_info["session_state"] if token_info is not None else ""
         }
 
     def get_django_template_context_processors(self):
@@ -116,3 +141,6 @@ class KeycloakPlugin(WirecloudPlugin):
         context["FIWARE_IDM_PUBLIC_URL"] = context["KEYCLOAK_PUBLIC_URL"]
 
         return context
+
+    def get_scripts(self, view):
+        return ("js/keycloak/sso.js",)

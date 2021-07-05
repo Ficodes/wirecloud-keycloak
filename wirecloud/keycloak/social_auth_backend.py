@@ -40,6 +40,7 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
 
     name = 'keycloak_oidc'
     ID_KEY = 'preferred_username'
+    DEFAULT_SCOPE = ["openid", "profile", "email", "offline_access"]
 
     URL = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_URL', '')
     REALM = getattr(settings, 'SOCIAL_AUTH_KEYCLOAK_OIDC_REALM', '')
@@ -49,6 +50,7 @@ class KeycloakOpenIdConnect(OpenIdConnectAuth):
         'id_token',
         'username',
         'refresh_token',
+        'session_state',
         ('expires_in', 'expires'),
         ('sub', 'id'),
         'roles'
