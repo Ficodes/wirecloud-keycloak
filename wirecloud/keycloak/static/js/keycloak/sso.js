@@ -11,7 +11,8 @@
     const interval = setInterval(() => {
         const client_id = Wirecloud.contextManager.get("keycloak_client_id");
         const session_state = Wirecloud.contextManager.get("keycloak_session");
-        login_status_iframe.contentWindow.postMessage(`${client_id} ${session_state}`, iframe_url.origin);
+        // string literals/templates are not supported by the django-compressor module used by WireCloud <= 1.4
+        login_status_iframe.contentWindow.postMessage(client_id + " " + session_state, iframe_url.origin);
     }, 1500);
 
     const handleChange = function handleChange(event) {
@@ -51,7 +52,8 @@
             } else {
                 const client_id = Wirecloud.contextManager.get("keycloak_client_id");
                 window.addEventListener("message", handleChange);
-                login_status_iframe.contentWindow.postMessage(`${client_id} `, iframe_url.origin);
+                // string literals/templates are not supported by the django-compressor module used by WireCloud <= 1.4
+                login_status_iframe.contentWindow.postMessage(client_id + " ", iframe_url.origin);
             }
         }
     };
