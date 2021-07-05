@@ -111,18 +111,17 @@ class KeycloakPlugin(WirecloudPlugin):
         if not IDM_SUPPORT_ENABLED:
             token_info = None
         else:
-            from social_django.models import UserSocialAuth
             try:
                 if callable(user.is_authenticated):
                     token_info = user.social_auth.values_list("extra_data", flat=True).get(provider="keycloak_oidc") if user.is_authenticated() else None
                 else:
                     token_info = user.social_auth.values_list("extra_data", flat=True).get(provider="keycloak_oidc") if user.is_authenticated else None
-            except UserSocialAuth.DoesNotExist:
+            except user.social_auth.model.DoesNotExist:
                 token_info = None
 
         return {
             'fiware_token_available': token_info is not None,
-            'keycloak_client_id': settings.SOCIAL_AUTH_KEYCLOAK_OIDC_KEY,
+            'keycloak_client_id': getattr(settings, "SOCIAL_AUTH_KEYCLOAK_OIDC_KEY", ""),
             'keycloak_session': token_info["session_state"] if token_info is not None else ""
         }
 
