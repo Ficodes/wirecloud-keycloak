@@ -73,7 +73,8 @@
                 };
             }
 
-            if (Wirecloud.contextManager.get("mode") !== "embedded") {
+            const version = new Wirecloud.Version(Wirecloud.contextManager.get("version"));
+            if (version.compareTo(new Wirecloud.Version("1.4")) >= 0 && Wirecloud.contextManager.get("mode") !== "embedded") {
                 const dialog = new Wirecloud.ui.MessageWindowMenu(
                     utils.gettext("Browser will be reloaded to accomodate to the new session info"),
                     utils.gettext("User Session Updated")
