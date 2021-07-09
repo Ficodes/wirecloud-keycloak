@@ -22,7 +22,7 @@ import logging
 from urllib.parse import quote
 
 from django.conf import settings
-from django.contrib.auth import REDIRECT_FIELD_NAME
+from django.contrib.auth import logout as auth_logout, REDIRECT_FIELD_NAME
 from django.urls import reverse
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.http import is_safe_url
@@ -55,12 +55,14 @@ def oauth_discovery(request):
 
 @require_GET
 def login(request):
-    if callable(request.user.is_authenticated) and request.user.is_authenticated() or request.user.is_authenticated is True:
-        url = request.GET.get(REDIRECT_FIELD_NAME, '/')
-    else:
-        url = reverse('social:begin', kwargs={'backend': 'keycloak_oidc'}) + '?' + request.GET.urlencode()
 
-    return HttpResponseRedirect(url)
+    if callable(request.user.is_authenticated) and request.user.is_authenticated() or request.user.is_authenticated is True:
+        if request.GET.get("force", "false").strip().lower() == "true":
+            auth_logout(request)
+        else:
+            return HttpResponseRedirect(request.GET.get(REDIRECT_FIELD_NAME, '/'))
+
+    return HttpResponseRedirect(reverse('social:begin', kwargs={'backend': 'keycloak_oidc'}) + '?' + request.GET.urlencode())
 
 
 @require_GET

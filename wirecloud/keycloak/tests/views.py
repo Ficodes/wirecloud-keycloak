@@ -83,7 +83,7 @@ class KeycloakViewTestCase(TestCase):
 
         self.assertEqual(response_mock, response)
         request.user.is_authenticated.assert_called_once_with()
-        request.GET.get.assert_called_once_with('field', '/')
+        request.GET.get.assert_called_with('field', '/')
         views.HttpResponseRedirect.assert_called_once_with('/home')
 
     @patch('django.conf.settings', new=MagicMock(FIWARE_PORTALS=()))
@@ -103,8 +103,33 @@ class KeycloakViewTestCase(TestCase):
         response = views.login(request)
 
         self.assertEqual(response_mock, response)
-        request.GET.get.assert_called_once_with('field', '/')
+        request.GET.get.assert_called_with('field', '/')
         views.HttpResponseRedirect.assert_called_once_with('/home')
+
+    @patch('django.conf.settings', new=MagicMock(FIWARE_PORTALS=()))
+    @patch('django.views.decorators.http.require_GET', new=get_decorator)
+    @patch('django.contrib.auth.logout')
+    def test_login_force(self, logout):
+        from wirecloud.keycloak import views
+        reload(views)
+
+        response_mock = MagicMock()
+        views.HttpResponseRedirect = MagicMock(return_value=response_mock)
+        views.REDIRECT_FIELD_NAME = 'field'
+
+        request = MagicMock()
+        request.user.is_authenticated = True
+        request.GET.get.side_effect = lambda attr, default=None: "true" if attr == "force" else "/home"
+        request.GET.urlencode.return_value = 'setting=test'
+        views.reverse = MagicMock(return_value='/home')
+
+        response = views.login(request)
+
+        self.assertEqual(response_mock, response)
+        logout.assert_called_once_with(request)
+        request.GET.urlencode.assert_called_once_with()
+        views.reverse.assert_called_once_with('social:begin', kwargs={'backend': 'keycloak_oidc'})
+        views.HttpResponseRedirect.assert_called_once_with('/home?setting=test')
 
     @patch('django.conf.settings', new=MagicMock(FIWARE_PORTALS=()))
     @patch('django.views.decorators.http.require_GET', new=get_decorator)
