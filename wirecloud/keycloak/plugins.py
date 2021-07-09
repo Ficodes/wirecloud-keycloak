@@ -23,6 +23,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.cache import cache_page
 
 from wirecloud.keycloak.utils import build_version_hash, build_backend, get_social_auth_model
+import wirecloud.platform
 from wirecloud.platform.plugins import WirecloudPlugin
 
 get_version_hash = build_version_hash()
@@ -143,4 +144,7 @@ class KeycloakPlugin(WirecloudPlugin):
         return context
 
     def get_scripts(self, view):
-        return ("js/keycloak/sso.js",)
+        if wirecloud.platform.__version_info__ >= (1, 4, 0):
+            return ("js/keycloak/sso.js",)
+        else:
+            return ()

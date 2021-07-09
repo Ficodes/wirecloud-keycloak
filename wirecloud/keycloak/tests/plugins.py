@@ -409,6 +409,24 @@ class KeycloakPluginTestCase(TestCase):
         SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
     ))
     @patch("wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED", new=True)
+    @patch("wirecloud.platform.__version_info__", new=(1, 3, 0))
+    def test_get_scripts_enabled_wirecloud_1_3(self):
+        import wirecloud.keycloak.plugins
+        plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
+
+        scripts = plugin.get_scripts("classic")
+
+        self.assertEqual(scripts, ())
+
+    @patch('django.conf.settings', new=MagicMock(
+        INSTALLED_APPS=(
+            'wirecloud.keycloak',
+            'social_django',
+        ),
+        SOCIAL_AUTH_KEYCLOAK_OIDC_KEY=KEY,
+        SOCIAL_AUTH_KEYCLOAK_OIDC_SECRET=SECRET
+    ))
+    @patch("wirecloud.keycloak.plugins.IDM_SUPPORT_ENABLED", new=True)
     def test_get_scripts_enabled(self):
         import wirecloud.keycloak.plugins
         plugin = wirecloud.keycloak.plugins.KeycloakPlugin()
