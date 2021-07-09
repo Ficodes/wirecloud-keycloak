@@ -32,59 +32,60 @@
     login_status_iframe.style.display = "none";
     document.body.appendChild(login_status_iframe);
 
-    const interval = setInterval(() => {
-        const client_id = Wirecloud.contextManager.get("keycloak_client_id");
-        const session_state = Wirecloud.contextManager.get("keycloak_session");
-        // string literals/templates are not supported by the django-compressor module used by WireCloud <= 1.4
-        login_status_iframe.contentWindow.postMessage(client_id + " " + session_state, iframe_url.origin);
-    }, 1500);
-
-    const handleChange = function handleChange(event) {
-        if (event.origin !== iframe_url.origin || login_status_iframe.contentWindow !== event.source) {
-            return;
-        }
-
-        window.removeEventListener("message", handleChange);
-        if (event.data === "changed") {
-            Wirecloud.login();
-        } else {
-            Wirecloud.logout();
-        }
-    };
-
-    const processResponse = function processResponse(event) {
-        if (event.origin !== iframe_url.origin || login_status_iframe.contentWindow !== event.source) {
-            return;
-        }
-
-        if (event.data === "changed") {
-            clearInterval(interval);
-            window.removeEventListener("message", processResponse);
+    Wirecloud.addEventListener("loaded", () => {
+        const interval = setInterval(() => {
+            const client_id = Wirecloud.contextManager.get("keycloak_client_id");
             const session_state = Wirecloud.contextManager.get("keycloak_session");
-            let action;
-            if (session_state === "") {
-                action = () => Wirecloud.login();
-            } else {
-                action = () => {
-                    const client_id = Wirecloud.contextManager.get("keycloak_client_id");
-                    window.addEventListener("message", handleChange);
-                    // string literals/templates are not supported by the django-compressor module used by WireCloud <= 1.4
-                    login_status_iframe.contentWindow.postMessage(client_id + " ", iframe_url.origin);
-                };
+            // string literals/templates are not supported by the django-compressor module used by WireCloud <= 1.4
+            login_status_iframe.contentWindow.postMessage(client_id + " " + session_state, iframe_url.origin);
+        }, 1500);
+
+        const handleChange = function handleChange(event) {
+            if (event.origin !== iframe_url.origin || login_status_iframe.contentWindow !== event.source) {
+                return;
             }
 
-            const version = new Wirecloud.Version(Wirecloud.contextManager.get("version"));
-            if (version.compareTo(new Wirecloud.Version("1.4")) >= 0 && Wirecloud.contextManager.get("mode") !== "embedded") {
-                const dialog = new Wirecloud.ui.MessageWindowMenu(
-                    utils.gettext("Browser will be reloaded to accomodate to the new session info"),
-                    utils.gettext("User Session Updated")
-                );
-                dialog.addEventListener("hide", action);
-                dialog.show();
+            window.removeEventListener("message", handleChange);
+            if (event.data === "changed") {
+                Wirecloud.login(true);
             } else {
-                action();
+                Wirecloud.logout();
             }
-        }
-    };
-    window.addEventListener("message", processResponse);
+        };
+
+        const processResponse = function processResponse(event) {
+            if (event.origin !== iframe_url.origin || login_status_iframe.contentWindow !== event.source) {
+                return;
+            }
+
+            if (event.data === "changed") {
+                clearInterval(interval);
+                window.removeEventListener("message", processResponse);
+                const session_state = Wirecloud.contextManager.get("keycloak_session");
+                let action;
+                if (session_state === "") {
+                    action = () => Wirecloud.login();
+                } else {
+                    action = () => {
+                        const client_id = Wirecloud.contextManager.get("keycloak_client_id");
+                        window.addEventListener("message", handleChange);
+                        // string literals/templates are not supported by the django-compressor module used by WireCloud <= 1.4
+                        login_status_iframe.contentWindow.postMessage(client_id + " ", iframe_url.origin);
+                    };
+                }
+
+                if (Wirecloud.contextManager.get("mode") !== "embedded") {
+                    const dialog = new Wirecloud.ui.MessageWindowMenu(
+                        utils.gettext("Browser will be reloaded to accomodate to the new session info"),
+                        utils.gettext("User Session Updated")
+                    );
+                    dialog.addEventListener("hide", action);
+                    dialog.show();
+                } else {
+                    action();
+                }
+            }
+        };
+        window.addEventListener("message", processResponse);
+    });
 })(Wirecloud.Utils);
