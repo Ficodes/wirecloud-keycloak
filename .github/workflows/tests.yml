@@ -56,7 +56,7 @@ jobs:
           pip install coverage
       - name: Run tests
         run: |
-          coverage run -a --branch --source=. wirecloud/keycloak/tests/tests.py
+          coverage run wirecloud/keycloak/tests/tests.py
       - name: Coveralls Parallel
         uses: AndreMiras/coveralls-python-action@develop
         with:
