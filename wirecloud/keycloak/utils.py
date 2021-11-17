@@ -25,11 +25,11 @@ def build_version_hash():
 
 def build_backend():
     try:
-        # Social auth < 4.1.0
+        # Social django < 5.0.0
         from social_django.utils import BACKENDS, get_backend, load_strategy
         return get_backend(BACKENDS, "keycloak_oidc")(load_strategy())
     except ImportError:
-        # Social auth 4.1.0 onwards
+        # Social django 5.0.0 onwards
         from social_django.utils import load_strategy
         return load_strategy().get_backend("keycloak_oidc")
 
