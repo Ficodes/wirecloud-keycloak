@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Copyright (c) 2019 Future Internet Consulting and Development Solutions S.L.
+# Copyright (c) 2019-2021 Future Internet Consulting and Development Solutions S.L.
 
 # This file is part of Wirecloud Keycloak plugin.
 
@@ -24,8 +24,14 @@ def build_version_hash():
 
 
 def build_backend():
-    from social_django.utils import BACKENDS, get_backend, load_strategy
-    return get_backend(BACKENDS, 'keycloak_oidc')(load_strategy())
+    try:
+        # Social auth < 4.1.0
+        from social_django.utils import BACKENDS, get_backend, load_strategy
+        return get_backend(BACKENDS, "keycloak_oidc")(load_strategy())
+    except ImportError:
+        # Social auth 4.1.0 onwards
+        from social_django.utils import load_strategy
+        return load_strategy().get_backend("keycloak_oidc")
 
 
 def load_strategy():
