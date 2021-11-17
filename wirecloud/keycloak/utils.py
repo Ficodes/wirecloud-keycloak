@@ -24,13 +24,8 @@ def build_version_hash():
 
 
 def build_backend():
-    from social_django.utils import BACKENDS, get_backend,  load_strategy
+    from social_django.utils import BACKENDS, get_backend, load_strategy
     return get_backend(BACKENDS, 'keycloak_oidc')(load_strategy())
-
-
-def build_simple_backend():
-    from social_django.utils import BACKENDS, get_backend
-    return get_backend(BACKENDS, 'keycloak_oidc')
 
 
 def load_strategy():
@@ -42,9 +37,11 @@ def get_social_auth_model():
     from social_django.models import UserSocialAuth
     return UserSocialAuth
 
+
 def get_user_model():
     from django.contrib.auth.models import User
     return User
+
 
 def get_group_model():
     from django.contrib.auth.models import Group
